@@ -1,5 +1,7 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
+import urllib.parse
+from datetime import datetime, timezone
 from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
@@ -7,9 +9,10 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .config import settings
 from .database import get_db
-from .models import ContactCreate, ContactUpdate
+from .models import ContactCreate, ContactUpdate, MailinglijstCreate
 from .importer import import_cooperatie_csv
 from . import auth
+from shared.google_workspace import workspace_manager
 
 app = FastAPI(
     title=settings.app_name,
@@ -282,6 +285,161 @@ def download_sample_csv():
         path=str(sample_path),
         filename="rebo_cooperatie_voorbeeld.csv",
         media_type="text/csv"
+    )
+
+
+# --- Mailinglijsten Beheer (Handmatig & Google Workspace) ---
+@app.get("/mailinglijsten", response_class=HTMLResponse)
+def page_mailinglijsten(request: Request, msg: Optional[str] = None, error: Optional[str] = None):
+    db = get_db()
+    lijsten = db.list_mailinglijsten()
+    return templates.TemplateResponse(
+        request=request,
+        name="mailinglijsten.html",
+        context={
+            "user": auth.get_current_user(request),
+            "mailinglijsten": lijsten,
+            "msg": msg,
+            "error": error
+        }
+    )
+
+
+@app.post("/mailinglijsten/nieuw")
+def action_create_mailinglijst(
+    naam: str = Form(...),
+    email_prefix: str = Form(...),
+    omschrijving: Optional[str] = Form(default="")
+):
+    clean_prefix = email_prefix.strip().lower().replace("@denheuvelvelp.nl", "")
+    full_email = f"{clean_prefix}@denheuvelvelp.nl"
+    db = get_db()
+    ml = db.create_mailinglijst(MailinglijstCreate(
+        naam=naam.strip(),
+        email_groep=full_email,
+        omschrijving=omschrijving.strip() if omschrijving else ""
+    ))
+    return RedirectResponse(
+        url=f"/mailinglijsten/{ml.id}/leden?msg=Mailinglijst+'{urllib.parse.quote(ml.naam)}'+aangemaakt.",
+        status_code=303
+    )
+
+
+@app.get("/mailinglijsten/{ml_id}/leden", response_class=HTMLResponse)
+def page_mailinglijst_leden(
+    request: Request,
+    ml_id: str,
+    msg: Optional[str] = None,
+    error: Optional[str] = None
+):
+    db = get_db()
+    ml = db.get_mailinglijst(ml_id)
+    if not ml:
+        raise HTTPException(status_code=404, detail="Mailinglijst niet gevonden")
+
+    alle_contacten = db.list_all()
+    leden_set = set(ml.leden)
+    huidige_leden = [c for c in alle_contacten if c.id in leden_set]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="mailinglijst_leden.html",
+        context={
+            "user": auth.get_current_user(request),
+            "mailinglijst": ml,
+            "huidige_leden": huidige_leden,
+            "alle_contacten": alle_contacten,
+            "msg": msg,
+            "error": error
+        }
+    )
+
+
+@app.post("/mailinglijsten/{ml_id}/leden/toevoegen")
+def action_add_members_to_mailinglijst(
+    ml_id: str,
+    contact_ids: List[str] = Form(default=[])
+):
+    db = get_db()
+    ml = db.get_mailinglijst(ml_id)
+    if not ml:
+        raise HTTPException(status_code=404, detail="Mailinglijst niet gevonden")
+
+    if not contact_ids:
+        return RedirectResponse(
+            url=f"/mailinglijsten/{ml_id}/leden?error=Geen+bewoners+geselecteerd",
+            status_code=303
+        )
+
+    db.add_members_to_mailinglijst(ml_id, contact_ids)
+    return RedirectResponse(
+        url=f"/mailinglijsten/{ml_id}/leden?msg={len(contact_ids)}+bewoner(s)+toegevoegd+aan+lijst",
+        status_code=303
+    )
+
+
+@app.post("/mailinglijsten/{ml_id}/leden/verwijderen")
+def action_remove_member_from_mailinglijst(
+    ml_id: str,
+    contact_id: str = Form(...)
+):
+    db = get_db()
+    ml = db.get_mailinglijst(ml_id)
+    if not ml:
+        raise HTTPException(status_code=404, detail="Mailinglijst niet gevonden")
+
+    db.remove_member_from_mailinglijst(ml_id, contact_id)
+    return RedirectResponse(
+        url=f"/mailinglijsten/{ml_id}/leden?msg=Bewoner+verwijderd+uit+lijst",
+        status_code=303
+    )
+
+
+@app.post("/mailinglijsten/{ml_id}/sync-google")
+def action_sync_mailinglijst_to_google(ml_id: str):
+    db = get_db()
+    ml = db.get_mailinglijst(ml_id)
+    if not ml:
+        raise HTTPException(status_code=404, detail="Mailinglijst niet gevonden")
+
+    # Verzamel alle e-mailadressen van de leden
+    alle_contacten = db.list_all()
+    leden_set = set(ml.leden)
+    emails = []
+    for c in alle_contacten:
+        if c.id in leden_set:
+            if c.email:
+                emails.append(c.email)
+            if c.email_2:
+                emails.append(c.email_2)
+            if c.email_3:
+                emails.append(c.email_3)
+
+    result = workspace_manager.sync_mailinglijst(
+        group_email=ml.email_groep,
+        group_name=ml.naam,
+        description=ml.omschrijving,
+        member_emails=emails
+    )
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    if result.get("success"):
+        status_str = "Gesynchroniseerd" if result.get("mode") == "live" else "Simulatiemodus (Google Workspace)"
+        db.update_sync_status(ml_id, status_str, now_iso, ml.email_groep)
+        msg_text = urllib.parse.quote(result.get("message", "Synchronisatie geslaagd."))
+        return RedirectResponse(url=f"/mailinglijsten/{ml_id}/leden?msg={msg_text}", status_code=303)
+    else:
+        err_text = urllib.parse.quote(result.get("error", "Fout bij Google synchronisatie."))
+        return RedirectResponse(url=f"/mailinglijsten/{ml_id}/leden?error={err_text}", status_code=303)
+
+
+@app.post("/mailinglijsten/{ml_id}/verwijderen")
+def action_delete_mailinglijst(ml_id: str):
+    db = get_db()
+    db.delete_mailinglijst(ml_id)
+    return RedirectResponse(
+        url="/mailinglijsten?msg=Mailinglijst+verwijderd",
+        status_code=303
     )
 
 

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -84,4 +84,33 @@ class VveContact(VveContactBase):
     bijgewerkt_op: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     model_config = {"from_attributes": True}
+
+
+class VveMailinglijstBase(BaseModel):
+    naam: str = Field(..., description="Naam van de mailinglijst (bijv. Woningeigenaren, Garages, Algemeen)")
+    email_groep: str = Field(..., description="E-mailadres van de groep (bijv. eigenaren@denheuvelvelp.nl)")
+    omschrijving: Optional[str] = Field(default="", description="Toelichting van de mailinglijst")
+
+
+class VveMailinglijstCreate(VveMailinglijstBase):
+    pass
+
+
+class VveMailinglijstUpdate(BaseModel):
+    naam: Optional[str] = None
+    email_groep: Optional[str] = None
+    omschrijving: Optional[str] = None
+
+
+class VveMailinglijst(VveMailinglijstBase):
+    id: str
+    leden: List[str] = Field(default_factory=list, description="Lijst van contact IDs die lid zijn")
+    google_group_id: Optional[str] = Field(default="", description="Google Workspace Group identifier")
+    aangemaakt_op: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    bijgewerkt_op: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    laatst_gesynchroniseerd: Optional[str] = Field(default="", description="Tijdstip van laatste Google Workspace sync")
+    sync_status: Optional[str] = Field(default="Niet gesynchroniseerd", description="Status van synchronisatie")
+
+    model_config = {"from_attributes": True}
+
 

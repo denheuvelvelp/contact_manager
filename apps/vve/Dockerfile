@@ -9,6 +9,7 @@ WORKDIR /app
 COPY apps/vve/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY shared/ /app/shared/
 COPY apps/ /app/apps/
 
 EXPOSE 8080

@@ -1,9 +1,10 @@
+import json
 import sqlite3
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Any
 from .config import settings
-from .models import Contact, ContactCreate, ContactUpdate
+from .models import Contact, ContactCreate, ContactUpdate, Mailinglijst, MailinglijstCreate, MailinglijstUpdate
 
 # Initialiseer Firestore indien geconfigureerd
 firestore_client = None
@@ -64,6 +65,22 @@ class SQLiteStore:
             """)
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_index_nummer ON contacten (index_nummer)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_adres ON contacten (adres_appartementsrecht)")
+
+            # Mailinglijsten tabel
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS cooperatie_mailinglijsten (
+                    id TEXT PRIMARY KEY,
+                    naam TEXT NOT NULL,
+                    email_groep TEXT NOT NULL,
+                    omschrijving TEXT,
+                    leden TEXT,
+                    google_group_id TEXT,
+                    aangemaakt_op TEXT NOT NULL,
+                    bijgewerkt_op TEXT NOT NULL,
+                    laatst_gesynchroniseerd TEXT,
+                    sync_status TEXT DEFAULT 'Niet gesynchroniseerd'
+                )
+            """)
             conn.commit()
 
     def _row_to_contact(self, row: sqlite3.Row) -> Contact:
@@ -202,6 +219,142 @@ class SQLiteStore:
             conn.commit()
             return count
 
+    # --- Mailinglijsten beheer ---
+    def _row_to_mailinglijst(self, row: sqlite3.Row) -> Mailinglijst:
+        data = dict(row)
+        leden_raw = data.get("leden")
+        if leden_raw:
+            try:
+                data["leden"] = json.loads(leden_raw)
+            except Exception:
+                data["leden"] = []
+        else:
+            data["leden"] = []
+        return Mailinglijst(**data)
+
+    def list_mailinglijsten(self) -> List[Mailinglijst]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM cooperatie_mailinglijsten ORDER BY naam ASC")
+            return [self._row_to_mailinglijst(r) for r in cursor.fetchall()]
+
+    def get_mailinglijst(self, ml_id: str) -> Optional[Mailinglijst]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM cooperatie_mailinglijsten WHERE id = ?", (ml_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return self._row_to_mailinglijst(row)
+
+    def create_mailinglijst(self, data: MailinglijstCreate) -> Mailinglijst:
+        ml_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO cooperatie_mailinglijsten (
+                    id, naam, email_groep, omschrijving, leden, google_group_id,
+                    aangemaakt_op, bijgewerkt_op, laatst_gesynchroniseerd, sync_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                ml_id, data.naam, data.email_groep, data.omschrijving or "",
+                json.dumps([]), "", now, now, "", "Niet gesynchroniseerd"
+            ))
+            conn.commit()
+        return self.get_mailinglijst(ml_id)
+
+    def update_mailinglijst(self, ml_id: str, data: MailinglijstUpdate) -> Optional[Mailinglijst]:
+        ml = self.get_mailinglijst(ml_id)
+        if not ml:
+            return None
+        now = datetime.now(timezone.utc).isoformat()
+        fields = []
+        values = []
+        if data.naam is not None:
+            fields.append("naam = ?")
+            values.append(data.naam)
+        if data.email_groep is not None:
+            fields.append("email_groep = ?")
+            values.append(data.email_groep)
+        if data.omschrijving is not None:
+            fields.append("omschrijving = ?")
+            values.append(data.omschrijving)
+
+        if not fields:
+            return ml
+
+        fields.append("bijgewerkt_op = ?")
+        values.append(now)
+        values.append(ml_id)
+
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"UPDATE cooperatie_mailinglijsten SET {', '.join(fields)} WHERE id = ?", values)
+            conn.commit()
+        return self.get_mailinglijst(ml_id)
+
+    def delete_mailinglijst(self, ml_id: str) -> bool:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM cooperatie_mailinglijsten WHERE id = ?", (ml_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def add_members_to_mailinglijst(self, ml_id: str, contact_ids: List[str]) -> Optional[Mailinglijst]:
+        ml = self.get_mailinglijst(ml_id)
+        if not ml:
+            return None
+        current_members = set(ml.leden)
+        for cid in contact_ids:
+            if cid:
+                current_members.add(cid)
+        new_list = sorted(list(current_members))
+        now = datetime.now(timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE cooperatie_mailinglijsten SET leden = ?, bijgewerkt_op = ? WHERE id = ?",
+                (json.dumps(new_list), now, ml_id)
+            )
+            conn.commit()
+        return self.get_mailinglijst(ml_id)
+
+    def remove_member_from_mailinglijst(self, ml_id: str, contact_id: str) -> Optional[Mailinglijst]:
+        ml = self.get_mailinglijst(ml_id)
+        if not ml:
+            return None
+        new_list = [c for c in ml.leden if c != contact_id]
+        now = datetime.now(timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE cooperatie_mailinglijsten SET leden = ?, bijgewerkt_op = ? WHERE id = ?",
+                (json.dumps(new_list), now, ml_id)
+            )
+            conn.commit()
+        return self.get_mailinglijst(ml_id)
+
+    def update_sync_status(self, ml_id: str, status: str, sync_time: str, google_group_id: Optional[str] = None) -> Optional[Mailinglijst]:
+        ml = self.get_mailinglijst(ml_id)
+        if not ml:
+            return None
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            if google_group_id:
+                cursor.execute(
+                    "UPDATE cooperatie_mailinglijsten SET sync_status = ?, laatst_gesynchroniseerd = ?, google_group_id = ? WHERE id = ?",
+                    (status, sync_time, google_group_id, ml_id)
+                )
+            else:
+                cursor.execute(
+                    "UPDATE cooperatie_mailinglijsten SET sync_status = ?, laatst_gesynchroniseerd = ? WHERE id = ?",
+                    (status, sync_time, ml_id)
+                )
+            conn.commit()
+        return self.get_mailinglijst(ml_id)
+
+
 
 class FirestoreStore:
     def __init__(self, client, collection_name: str):
@@ -313,6 +466,108 @@ class FirestoreStore:
         for doc in docs:
             doc.reference.delete()
         return count
+
+    # --- Mailinglijsten beheer in Firestore ---
+    @property
+    def ml_col(self):
+        return self.client.collection("cooperatie_mailinglijsten")
+
+    def list_mailinglijsten(self) -> List[Mailinglijst]:
+        docs = self.ml_col.stream()
+        results = []
+        for doc in docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            if "leden" not in data or not isinstance(data["leden"], list):
+                data["leden"] = []
+            results.append(Mailinglijst(**data))
+        results.sort(key=lambda x: x.naam.lower())
+        return results
+
+    def get_mailinglijst(self, ml_id: str) -> Optional[Mailinglijst]:
+        doc = self.ml_col.document(ml_id).get()
+        if not doc.exists:
+            return None
+        data = doc.to_dict()
+        data["id"] = doc.id
+        if "leden" not in data or not isinstance(data["leden"], list):
+            data["leden"] = []
+        return Mailinglijst(**data)
+
+    def create_mailinglijst(self, data: MailinglijstCreate) -> Mailinglijst:
+        doc_ref = self.ml_col.document()
+        now = datetime.now(timezone.utc).isoformat()
+        payload = data.model_dump()
+        payload["id"] = doc_ref.id
+        payload["leden"] = []
+        payload["google_group_id"] = ""
+        payload["aangemaakt_op"] = now
+        payload["bijgewerkt_op"] = now
+        payload["laatst_gesynchroniseerd"] = ""
+        payload["sync_status"] = "Niet gesynchroniseerd"
+        doc_ref.set(payload)
+        return Mailinglijst(**payload)
+
+    def update_mailinglijst(self, ml_id: str, data: MailinglijstUpdate) -> Optional[Mailinglijst]:
+        doc_ref = self.ml_col.document(ml_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            return None
+        update_dict = data.model_dump(exclude_unset=True)
+        if not update_dict:
+            return self.get_mailinglijst(ml_id)
+        update_dict["bijgewerkt_op"] = datetime.now(timezone.utc).isoformat()
+        doc_ref.update(update_dict)
+        return self.get_mailinglijst(ml_id)
+
+    def delete_mailinglijst(self, ml_id: str) -> bool:
+        doc_ref = self.ml_col.document(ml_id)
+        if not doc_ref.get().exists:
+            return False
+        doc_ref.delete()
+        return True
+
+    def add_members_to_mailinglijst(self, ml_id: str, contact_ids: List[str]) -> Optional[Mailinglijst]:
+        ml = self.get_mailinglijst(ml_id)
+        if not ml:
+            return None
+        current_members = set(ml.leden)
+        for cid in contact_ids:
+            if cid:
+                current_members.add(cid)
+        new_list = sorted(list(current_members))
+        now = datetime.now(timezone.utc).isoformat()
+        self.ml_col.document(ml_id).update({
+            "leden": new_list,
+            "bijgewerkt_op": now
+        })
+        return self.get_mailinglijst(ml_id)
+
+    def remove_member_from_mailinglijst(self, ml_id: str, contact_id: str) -> Optional[Mailinglijst]:
+        ml = self.get_mailinglijst(ml_id)
+        if not ml:
+            return None
+        new_list = [c for c in ml.leden if c != contact_id]
+        now = datetime.now(timezone.utc).isoformat()
+        self.ml_col.document(ml_id).update({
+            "leden": new_list,
+            "bijgewerkt_op": now
+        })
+        return self.get_mailinglijst(ml_id)
+
+    def update_sync_status(self, ml_id: str, status: str, sync_time: str, google_group_id: Optional[str] = None) -> Optional[Mailinglijst]:
+        doc_ref = self.ml_col.document(ml_id)
+        if not doc_ref.get().exists:
+            return None
+        payload = {
+            "sync_status": status,
+            "laatst_gesynchroniseerd": sync_time
+        }
+        if google_group_id:
+            payload["google_group_id"] = google_group_id
+        doc_ref.update(payload)
+        return self.get_mailinglijst(ml_id)
+
 
 
 # Actieve repository selector

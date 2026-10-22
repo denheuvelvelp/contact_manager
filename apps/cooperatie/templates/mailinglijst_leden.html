@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Leden Beheren - {{ mailinglijst.naam }} - Coöperatieve Vereniging{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Kruimelpad & Terugknop -->
+    <div class="flex items-center justify-between">
+        <a href="/mailinglijsten" class="inline-flex items-center space-x-1 text-sm font-semibold text-brand-700 hover:text-brand-900 transition">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Terug naar Mailinglijsten</span>
+        </a>
+    </div>
+
+    <!-- Header Box met Groepsinformatie & Sync Knop -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-2">
+            <div class="flex items-center space-x-3">
+                <span class="p-2.5 bg-brand-100 text-brand-800 rounded-lg">
+                    <i class="fa-solid fa-users-gear text-2xl"></i>
+                </span>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ mailinglijst.naam }}</h1>
+                    <p class="text-sm font-mono text-brand-700 font-medium">
+                        <i class="fa-solid fa-at text-slate-400 mr-1"></i>{{ mailinglijst.email_groep }}
+                    </p>
+                </div>
+            </div>
+
+            {% if mailinglijst.omschrijving %}
+            <p class="text-sm text-slate-600 pl-1">{{ mailinglijst.omschrijving }}</p>
+            {% endif %}
+
+            <div class="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-500">
+                <span class="px-2.5 py-1 rounded-full bg-slate-100 font-semibold text-slate-700 border border-slate-200">
+                    <i class="fa-solid fa-user-check mr-1 text-brand-700"></i>
+                    {{ huidige_leden|length }} actieve leden
+                </span>
+
+                {% if mailinglijst.sync_status == 'Gesynchroniseerd' %}
+                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300">
+                    <i class="fa-solid fa-check-double mr-1"></i>Google Workspace Gesynchroniseerd
+                </span>
+                {% elif 'simulatie' in mailinglijst.sync_status.lower() or 'gesimuleerd' in mailinglijst.sync_status.lower() %}
+                <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-semibold border border-amber-300" title="{{ mailinglijst.sync_status }}">
+                    <i class="fa-solid fa-vial mr-1"></i>Simulatiemodus
+                </span>
+                {% else %}
+                <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold border border-slate-200">
+                    <i class="fa-solid fa-clock mr-1"></i>{{ mailinglijst.sync_status or 'Niet gesynchroniseerd' }}
+                </span>
+                {% endif %}
+
+                {% if mailinglijst.laatst_gesynchroniseerd %}
+                <span class="text-slate-500">
+                    <i class="fa-solid fa-calendar-check mr-1"></i>Sync: {{ mailinglijst.laatst_gesynchroniseerd[:16].replace('T', ' ') }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Google Workspace Push Knop -->
+        <div class="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <form action="/mailinglijsten/{{ mailinglijst.id }}/sync-google" method="POST" onsubmit="return confirm('Wilt u deze {{ huidige_leden|length }} leden nu direct synchroniseren met Google Workspace Groep {{ mailinglijst.email_groep }}?');">
+                <button type="submit" class="w-full sm:w-auto px-5 py-3 bg-brand-700 hover:bg-brand-800 text-white font-bold rounded-lg text-sm transition shadow-sm flex items-center justify-center space-x-2">
+                    <i class="fa-brands fa-google text-lg"></i>
+                    <span>Pushen naar Google Workspace</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Meldingen -->
+    {% if msg %}
+    <div class="p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm flex items-center space-x-2 shadow-sm">
+        <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+        <span>{{ msg }}</span>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-900 text-sm flex items-center space-x-2 shadow-sm">
+        <i class="fa-solid fa-circle-exclamation text-red-600 text-lg"></i>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Paneel 1: Huidige Leden in deze Lijst -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <h2 class="font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-clipboard-check text-brand-700"></i>
+                    <span>Huidige Leden in deze lijst ({{ huidige_leden|length }})</span>
+                </h2>
+                <p class="text-xs text-slate-500">Contacten die momenteel zijn opgenomen in deze mailinglijst.</p>
+            </div>
+        </div>
+
+        {% if huidige_leden %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200 bg-slate-100/60 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        <th class="py-3 px-4">Index</th>
+                        <th class="py-3 px-4">Adres</th>
+                        <th class="py-3 px-4">Naam Bewoner</th>
+                        <th class="py-3 px-4">E-mailadressen</th>
+                        <th class="py-3 px-4 text-right">Actie</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    {% for lid in huidige_leden %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-4 font-mono font-bold text-brand-800">{{ lid.index_nummer }}</td>
+                        <td class="py-3 px-4 font-medium text-slate-800">{{ lid.adres_appartementsrecht }}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-900">{{ lid.naam }}</td>
+                        <td class="py-3 px-4">
+                            {% if lid.email %}
+                                <div class="font-mono text-xs text-slate-800">{{ lid.email }}</div>
+                            {% endif %}
+                            {% if lid.email_2 %}
+                                <div class="font-mono text-xs text-slate-500">{{ lid.email_2 }} (2)</div>
+                            {% endif %}
+                            {% if lid.email_3 %}
+                                <div class="font-mono text-xs text-slate-500">{{ lid.email_3 }} (3)</div>
+                            {% endif %}
+                            {% if not lid.email and not lid.email_2 and not lid.email_3 %}
+                                <span class="text-xs text-amber-700 font-semibold">
+                                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>Geen e-mailadres
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <form action="/mailinglijsten/{{ mailinglijst.id }}/leden/verwijderen" method="POST" class="inline" onsubmit="return confirm('Weet u zeker dat u {{ lid.naam }} uit deze lijst wilt verwijderen?');">
+                                <input type="hidden" name="contact_id" value="{{ lid.id }}">
+                                <button type="submit" class="px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:text-white hover:bg-red-600 rounded-md transition border border-red-200 hover:border-red-600">
+                                    <i class="fa-solid fa-user-minus mr-1"></i>Verwijderen
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-slate-500 space-y-2">
+            <i class="fa-regular fa-user text-3xl text-slate-300"></i>
+            <p class="font-medium text-slate-700">Er zijn nog geen leden toegevoegd aan deze mailinglijst.</p>
+            <p class="text-xs text-slate-400">Selecteer hieronder bewoners en klik op "Geselecteerde bewoners toevoegen".</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Paneel 2: Handmatig Leden Toevoegen uit Contacten -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <h2 class="font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-user-plus text-brand-700"></i>
+                    <span>Bewoners Toevoegen</span>
+                </h2>
+                <p class="text-xs text-slate-500">Vink de bewoners aan die u wilt toevoegen aan deze lijst.</p>
+            </div>
+
+            <!-- Zoekfilter in tabel -->
+            <div class="w-full sm:w-64">
+                <input type="text" id="filterInput" placeholder="Zoek op naam of adres..." class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none" onkeyup="filterTable()">
+            </div>
+        </div>
+
+        <form action="/mailinglijsten/{{ mailinglijst.id }}/leden/toevoegen" method="POST">
+            <!-- Actiebalk bovenaan de tabel -->
+            <div class="px-6 py-3 bg-slate-100/50 border-b border-slate-200 flex items-center justify-between">
+                <label class="inline-flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                    <input type="checkbox" id="selectAllCheckbox" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" onclick="toggleSelectAll(this)">
+                    <span>Selecteer alle zichtbare bewoners</span>
+                </label>
+                <button type="submit" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center space-x-1">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Geselecteerde Bewoners Toevoegen</span>
+                </button>
+            </div>
+
+            <div class="overflow-x-auto max-h-[500px]">
+                <table class="w-full text-left border-collapse text-sm" id="availableTable">
+                    <thead class="sticky top-0 bg-slate-100 z-10">
+                        <tr class="border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            <th class="py-2.5 px-4 w-12 text-center">Kies</th>
+                            <th class="py-2.5 px-4">Index</th>
+                            <th class="py-2.5 px-4">Adres</th>
+                            <th class="py-2.5 px-4">Naam</th>
+                            <th class="py-2.5 px-4">E-mail</th>
+                            <th class="py-2.5 px-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        {% for c in alle_contacten %}
+                        {% set is_al_lid = c.id in mailinglijst.leden %}
+                        <tr class="hover:bg-slate-50 transition candidate-row {% if is_al_lid %}opacity-50 bg-slate-50/50{% endif %}">
+                            <td class="py-2.5 px-4 text-center">
+                                {% if is_al_lid %}
+                                <i class="fa-solid fa-check text-emerald-600 text-xs" title="Reeds lid"></i>
+                                {% else %}
+                                <input type="checkbox" name="contact_ids" value="{{ c.id }}" class="row-checkbox rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                {% endif %}
+                            </td>
+                            <td class="py-2.5 px-4 font-mono font-bold text-slate-800">{{ c.index_nummer }}</td>
+                            <td class="py-2.5 px-4 font-medium text-slate-800">{{ c.adres_appartementsrecht }}</td>
+                            <td class="py-2.5 px-4 font-semibold text-slate-900">{{ c.naam }}</td>
+                            <td class="py-2.5 px-4 font-mono text-xs text-slate-600">
+                                {% if c.email %}
+                                    {{ c.email }}
+                                {% elif c.email_2 %}
+                                    {{ c.email_2 }}
+                                {% elif c.email_3 %}
+                                    {{ c.email_3 }}
+                                {% else %}
+                                    <span class="text-amber-700 italic">Geen e-mailadres</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-2.5 px-4">
+                                {% if is_al_lid %}
+                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                                        Reeds Lid
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
+                                        Beschikbaar
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Actiebalk onderaan de tabel -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button type="submit" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-bold transition shadow-sm flex items-center space-x-1.5">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Geselecteerde Bewoners Toevoegen</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script>
+function toggleSelectAll(master) {
+    const checkboxes = document.querySelectorAll('.candidate-row:not([style*="display: none"]) .row-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = master.checked;
+    });
+}
+
+function filterTable() {
+    const input = document.getElementById("filterInput");
+    const filter = input.value.toLowerCase();
+    const rows = document.querySelectorAll(".candidate-row");
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(filter)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+</script>
+{% endblock %}

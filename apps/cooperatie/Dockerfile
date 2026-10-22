@@ -13,6 +13,7 @@ COPY apps/cooperatie/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Kopieer applicatiecode
+COPY shared/ /app/shared/
 COPY apps/ /app/apps/
 
 # Exposeer poort (Cloud Run gebruikt standaard 8080)
