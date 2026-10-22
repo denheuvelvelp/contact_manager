@@ -1,6 +1,7 @@
 import csv
 import io
-from typing import Dict, Any, List
+import re
+from typing import Dict, Any, List, Optional
 from .models import VveContactCreate
 
 EXPECTED_COLUMNS = [
@@ -47,6 +48,25 @@ def clean_cell(val: Any) -> str:
     if s.lower() in ("nan", "none", "null"):
         return ""
     return s
+
+
+def extract_garage_number(adres: str, index_nummer: str) -> Optional[str]:
+    """
+    De garages beginnen bij 501 (bijv. 'Den Heuvel 501').
+    Zoekt naar een huis-/boxnummer >= 501 in het adres of indexnummer.
+    """
+    for text in (adres, index_nummer):
+        if not text:
+            continue
+        matches = re.findall(r'\b(\d+)\b', text)
+        for m in matches:
+            try:
+                val = int(m)
+                if val >= 501:
+                    return str(val)
+            except ValueError:
+                continue
+    return None
 
 
 def import_vve_csv(file_bytes: bytes, db) -> Dict[str, Any]:
@@ -127,9 +147,18 @@ def import_vve_csv(file_bytes: bytes, db) -> Dict[str, Any]:
             })
             continue
 
-        # Slimme classificatie van het type VvE-lid
+        # Slimme detectie van garageboxen (garages beginnen bij 501, bijv. 'Den Heuvel 501')
+        garage_nr = extract_garage_number(adres, index_nummer)
         bestemming_lower = bestemming.lower()
-        if any(g in bestemming_lower for g in ("garage", "parkeer", "box", "stalling")):
+        garageboxnummers = ""
+
+        if garage_nr:
+            type_lid = "Garageboxhouder"
+            garageboxnummers = garage_nr
+            if not bestemming or bestemming_lower == "woning":
+                bestemming = f"Garagebox {garage_nr}"
+            bedrijfsnaam = ""
+        elif any(g in bestemming_lower for g in ("garage", "parkeer", "box", "stalling")):
             type_lid = "Garageboxhouder"
             bedrijfsnaam = ""
         elif any(b in bestemming_lower for b in ("bedrijf", "commercieel", "kantoor", "winkel", "praktijk", "horeca")):
@@ -165,7 +194,7 @@ def import_vve_csv(file_bytes: bytes, db) -> Dict[str, Any]:
                 email_3=get_val(row, "Email 3"),
                 correspondentieadres_extern=correspondentie,
                 is_externe_eigenaar=is_extern,
-                garageboxnummers="",
+                garageboxnummers=garageboxnummers,
                 breukdeel="",
                 type_lid=type_lid,
                 bedrijfsnaam=bedrijfsnaam,
@@ -202,3 +231,4 @@ def import_vve_csv(file_bytes: bytes, db) -> Dict[str, Any]:
         "delimiter": delimiter,
         "details": details
     }
+

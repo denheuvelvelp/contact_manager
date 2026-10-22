@@ -71,6 +71,22 @@ def test_vve_deduplication_keeps_existing_untouched(test_db):
     assert check_orig.garageboxnummers == "G-05"
 
 
+def test_garagebox_extraction_den_heuvel_501(test_db):
+    """
+    Test dat een adres zoals 'Den Heuvel 501' automatisch wordt herkend als
+    garageboxhouder en dat '501' direct in het veld garageboxnummers wordt geplaatst.
+    """
+    csv = CSV_HEADER + "501,Garage,Den Heuvel 501,Mevr. Van Garagen,Den Heuvel 12,0612345678,,,,,\n"
+    res = import_vve_csv(csv.encode("utf-8"), test_db)
+    assert res["success"] is True
+    assert res["added"] == 1
+
+    garage = test_db.find_existing("501", "Den Heuvel 501")
+    assert garage is not None
+    assert garage.type_lid == "Garageboxhouder"
+    assert garage.garageboxnummers == "501"
+
+
 def test_vve_reset_all(test_db):
     csv = CSV_HEADER + "A-01,Woning,Molenwerf 12-A,Eigenaar,Molenwerf 12-A,0611111111,,,,,\n"
     import_vve_csv(csv.encode("utf-8"), test_db)
@@ -79,3 +95,4 @@ def test_vve_reset_all(test_db):
     count = test_db.reset_all()
     assert count == 1
     assert len(test_db.list_all()) == 0
+
