@@ -337,3 +337,4 @@ def get_vve_db():
     if firestore_client:
         return VveFirestoreStore(firestore_client, settings.firestore_collection)
     return VveSQLiteStore(settings.sqlite_db_path)
+

@@ -14,3 +14,4 @@ echo " Netwerk URL: http://10.13.20.161:${PORT}"
 echo "=========================================================="
 
 exec python3 -m uvicorn apps.vve.main:app --host "$HOST" --port "$PORT" --reload
+

@@ -3,11 +3,13 @@ from typing import Optional
 from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 
 from .config import settings
 from .database import get_vve_db
 from .models import VveContactCreate, VveContactUpdate
 from .importer import import_vve_csv
+from .auth import auth_router, get_current_user, SESSION_SECRET_KEY
 
 app = FastAPI(
     title=settings.app_name,
@@ -17,6 +19,28 @@ app = FastAPI(
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+@app.middleware("http")
+async def auth_guard_middleware(request: Request, call_next):
+    """Beveiligt alle VvE beheerpagina's zodat alleen ingelogde @denheuvelvelp.nl gebruikers erbij kunnen."""
+    path = request.url.path
+
+    # Openbare paden
+    public_paths = ("/health", "/login", "/auth/", "/static/")
+    if path == "/" or any(path.startswith(p) for p in public_paths):
+        return await call_next(request)
+
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url=f"/login?next={path}", status_code=303)
+
+    return await call_next(request)
+
+
+# Sessie-middleware wordt als laatste toegevoegd zodat request.session beschikbaar is in auth_guard_middleware
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
+app.include_router(auth_router)
 
 
 @app.get("/health")
@@ -52,6 +76,7 @@ def list_vve_contacts(
         request=request,
         name="index.html",
         context={
+            "user": get_current_user(request),
             "contacts": contacts,
             "search_query": q,
             "selected_type": type,
@@ -78,7 +103,7 @@ def new_vve_contact_form(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="contact_form.html",
-        context={"contact": None}
+        context={"user": get_current_user(request), "contact": None}
     )
 
 
@@ -157,7 +182,7 @@ def get_vve_contact_detail(request: Request, contact_id: str):
     return templates.TemplateResponse(
         request=request,
         name="contact_form.html",
-        context={"contact": contact}
+        context={"user": get_current_user(request), "contact": contact}
     )
 
 
@@ -237,7 +262,7 @@ def import_vve_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="import.html",
-        context={"results": None}
+        context={"user": get_current_user(request), "results": None}
     )
 
 
@@ -249,7 +274,7 @@ async def handle_vve_csv_upload(request: Request, file: UploadFile = File(...)):
     return templates.TemplateResponse(
         request=request,
         name="import.html",
-        context={"results": results}
+        context={"user": get_current_user(request), "results": results}
     )
 
 
@@ -280,3 +305,4 @@ async def api_import_vve_csv(file: UploadFile = File(...)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("apps.vve.main:app", host="0.0.0.0", port=settings.port, reload=True)
+

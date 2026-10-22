@@ -14,13 +14,22 @@ def setup_test_db(tmp_path, monkeypatch):
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    c = TestClient(app)
+    c.post("/auth/dev-login")
+    return c
 
 
 def test_vve_health_check(client):
     res = client.get("/health")
     assert res.status_code == 200
     assert res.json()["status"] == "ok"
+
+
+def test_vve_auth_redirect_when_not_logged_in():
+    unauthed = TestClient(app)
+    res = unauthed.get("/contacten", follow_redirects=False)
+    assert res.status_code == 303
+    assert "/login" in res.headers["location"]
 
 
 def test_vve_empty_list(client):
@@ -50,18 +59,15 @@ def test_create_and_filter_vve_contact(client):
     assert "Bakkerij BV" in res.text
     assert "25/1000" in res.text
 
-    # Bekijk overzicht
     list_res = client.get("/contacten")
     assert "Bakkerij BV" in list_res.text
     assert "G-01, G-02" in list_res.text
     assert "Bedrijf" in list_res.text
     assert "Elders wonend" in list_res.text
 
-    # Filter op bedrijf
     filter_res = client.get("/contacten?type=Bedrijf%20%2F%20Commercieel")
     assert "Bakkerij BV" in filter_res.text
 
-    # Filter op woning (moet nu niet tonen)
     woning_res = client.get("/contacten?type=Woningeigenaar")
     assert "Bakkerij BV" not in woning_res.text
 

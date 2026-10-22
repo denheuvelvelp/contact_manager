@@ -84,3 +84,4 @@ class VveContact(VveContactBase):
     bijgewerkt_op: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     model_config = {"from_attributes": True}
+

@@ -14,13 +14,24 @@ def setup_test_db(tmp_path, monkeypatch):
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    c = TestClient(app)
+    # Log in als geautoriseerde gebruiker van denheuvelvelp.nl
+    c.post("/auth/dev-login")
+    return c
 
 
 def test_health_check(client):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
+
+def test_auth_redirect_when_not_logged_in():
+    # Nieuwe ongeauthenticeerde client
+    unauthed = TestClient(app)
+    res = unauthed.get("/contacten", follow_redirects=False)
+    assert res.status_code == 303
+    assert "/login" in res.headers["location"]
 
 
 def test_contacten_page_empty(client):
@@ -83,7 +94,6 @@ def test_csv_upload_flow(client):
 
 
 def test_reset_endpoint(client):
-    # Eerst toevoegen
     payload = {
         "index_nummer": "501",
         "bestemming": "Woning",
@@ -95,7 +105,6 @@ def test_reset_endpoint(client):
     client.post("/contacten/nieuw", data=payload)
     assert "Te Wissen Bewoner" in client.get("/contacten").text
 
-    # Reset uitvoeren
     res = client.post("/contacten/reset", follow_redirects=True)
     assert res.status_code == 200
     assert "Database succesvol gereset" in res.text

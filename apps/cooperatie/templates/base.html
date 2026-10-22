@@ -62,6 +62,19 @@
                         <i class="fa-solid fa-user-plus"></i>
                         <span class="hidden md:inline">Nieuw Contact</span>
                     </a>
+
+                    <!-- Ingelogde Gebruiker & Uitloggen -->
+                    {% if user %}
+                    <div class="flex items-center pl-2 sm:pl-4 border-l border-brand-700 space-x-2">
+                        <span class="text-xs text-emerald-200 hidden lg:inline-block font-medium truncate max-w-[150px]" title="{{ user.email }}">
+                            <i class="fa-solid fa-circle-user mr-1"></i>{{ user.email }}
+                        </span>
+                        <a href="/logout" class="px-2.5 py-1.5 bg-brand-900 hover:bg-red-900 text-emerald-200 hover:text-white rounded-md text-xs font-semibold transition flex items-center space-x-1 border border-brand-700 hover:border-red-700" title="Uitloggen">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                            <span class="hidden sm:inline">Uitloggen</span>
+                        </a>
+                    </div>
+                    {% endif %}
                 </nav>
             </div>
         </div>
