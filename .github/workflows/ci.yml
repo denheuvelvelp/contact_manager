@@ -1,0 +1,41 @@
+name: CI - Code Quality & Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-cooperatie:
+    name: Test Coöperatieve App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "apps/cooperatie/requirements.txt"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/cooperatie/requirements.txt
+          pip install pytest flake8
+
+      - name: Lint with flake8 (syntax errors & warnings)
+        run: |
+          # Stop build if there are Python syntax errors or undefined names
+          flake8 apps/cooperatie --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings. 120 chars line length.
+          flake8 apps/cooperatie --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+      - name: Run Pytest unittests
+        run: |
+          cd apps/cooperatie
+          pytest -v

@@ -1,0 +1,80 @@
+import pytest
+from fastapi.testclient import TestClient
+from apps.cooperatie.main import app
+from apps.cooperatie.config import settings
+
+
+@pytest.fixture(autouse=True)
+def setup_test_db(tmp_path, monkeypatch):
+    test_db_path = str(tmp_path / "test_api_contacts.db")
+    monkeypatch.setattr(settings, "sqlite_db_path", test_db_path)
+    monkeypatch.setattr(settings, "use_firestore", False)
+    monkeypatch.setattr(settings, "firestore_project_id", "")
+
+
+@pytest.fixture
+def client():
+    return TestClient(app)
+
+
+def test_health_check(client):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+
+
+def test_contacten_page_empty(client):
+    response = client.get("/contacten")
+    assert response.status_code == 200
+    assert "Geen contacten gevonden" in response.text
+
+
+def test_create_and_view_contact(client):
+    # Voeg nieuw contact toe via form POST
+    payload = {
+        "index_nummer": "301",
+        "bestemming": "Woning",
+        "adres_appartementsrecht": "Molenwerf 30-A",
+        "naam": "Test Bewoner",
+        "postadres": "Molenwerf 30-A",
+        "telefoonnummer": "06-11223344",
+        "telefoonnummer_2": "06-99887766",
+        "telefoonnummer_3": "06-55443322",
+        "email": "test@bewoner.nl",
+        "email_2": "nood1@bewoner.nl",
+        "email_3": "nood2@bewoner.nl",
+        "noodcontactpersoon_1": "Contact Persoon 1",
+        "noodcontactpersoon_2": "Contact Persoon 2",
+        "etage": "3",
+        "minder_mobiel": 1,
+        "huisdieren": "1 hond",
+        "intercom_naam": "Bewoner",
+        "notities": "Test notitie"
+    }
+    response = client.post("/contacten/nieuw", data=payload, follow_redirects=True)
+    assert response.status_code == 200
+    assert "Test Bewoner" in response.text
+    assert "301" in response.text
+
+    # Bekijk overzicht
+    list_res = client.get("/contacten")
+    assert "Test Bewoner" in list_res.text
+    assert "Molenwerf 30-A" in list_res.text
+    assert "Zorg/Mobiel" in list_res.text
+
+
+def test_csv_upload_flow(client):
+    header = (
+        b"Index nummer,Bestemming,Adres appartementsrecht,Naam,Postadres,"
+        b"Telefoonnummer,Telefoonnummer 2,Telefoonnummer 3,Email,Email 2,Email 3\n"
+    )
+    row = b"401,Woning,Molenwerf 40,Upload Bewoner,Molenwerf 40,0699999999,,,,,\n"
+    csv_bytes = header + row
+
+    response = client.post(
+        "/importeren",
+        files={"file": ("test.csv", csv_bytes, "text/csv")}
+    )
+    assert response.status_code == 200
+    assert "Nieuw Toegevoegd" in response.text
+    assert "Upload Bewoner" in response.text

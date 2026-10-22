@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="nl" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Coöperatieve Vereniging - Huismeester Contactmanager{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased">
+
+    <!-- Top Navigatiebar -->
+    <header class="bg-brand-800 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Titel -->
+                <div class="flex items-center space-x-3">
+                    <span class="p-2 bg-brand-700 rounded-lg text-emerald-200">
+                        <i class="fa-solid fa-building-user text-xl"></i>
+                    </span>
+                    <div>
+                        <a href="/contacten" class="font-bold text-lg tracking-tight hover:text-brand-100 transition">
+                            Huismeester Portaal
+                        </a>
+                        <span class="hidden sm:inline-block ml-2 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-900 text-emerald-200 border border-emerald-700">
+                            Coöperatieve Vereniging
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Navigatie Links -->
+                <nav class="flex items-center space-x-2 sm:space-x-4">
+                    <a href="/contacten" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-brand-700 transition flex items-center space-x-1">
+                        <i class="fa-solid fa-address-book"></i>
+                        <span>Contacten</span>
+                    </a>
+                    <a href="/importeren" class="px-3 py-2 rounded-md text-sm font-medium bg-brand-600 hover:bg-brand-500 transition flex items-center space-x-1 shadow-sm">
+                        <i class="fa-solid fa-file-csv"></i>
+                        <span>CSV Importeren</span>
+                    </a>
+                    <a href="/contacten/nieuw" class="px-3 py-2 rounded-md text-sm font-medium bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-semibold transition flex items-center space-x-1 shadow-sm">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span class="hidden md:inline">Nieuw Contact</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hoofdinhoud -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
+            <div>
+                <strong>Huismeester Contactmanager</strong> &bull; Coöperatieve Vereniging &bull; Fase 1 (Rebo CSV Import)
+            </div>
+            <div class="flex items-center space-x-4">
+                <span><i class="fa-solid fa-shield-halved text-brand-600 mr-1"></i>Bestaande contacten beschermd</span>
+                <span><i class="fa-brands fa-google text-slate-400 mr-1"></i>Cloud Ready</span>
+            </div>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

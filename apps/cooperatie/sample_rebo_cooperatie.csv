@@ -1,0 +1,7 @@
+Index nummer,Bestemming,Adres appartementsrecht,Naam,Postadres,Telefoonnummer,Telefoonnummer 2,Telefoonnummer 3,Email,Email 2,Email 3
+101,Woning,Molenwerf 12-A,J. Jansen,Molenwerf 12-A 1011AB Amsterdam,06-12345678,06-98765432,020-5551234,j.jansen@example.com,nood1.jansen@example.com,nood2.jansen@example.com
+102,Woning,Molenwerf 12-B,M. de Vries,Molenwerf 12-B 1011AB Amsterdam,06-23456789,06-87654321,,m.devries@example.com,familie.devries@example.com,
+103,Woning,Molenwerf 14-A,K. Bakker,Molenwerf 14-A 1011AB Amsterdam,06-34567890,,,k.bakker@example.com,,
+201,Woning,Molenwerf 14-B,P. van Dijk & A. Smit,Molenwerf 14-B 1011AB Amsterdam,06-45678901,06-76543210,06-11223344,vandijk.smit@example.com,ouders.vandijk@example.com,dochter.smit@example.com
+202,Woning,Molenwerf 16-A,Dhr. E. Visser,Molenwerf 16-A 1011AB Amsterdam,06-56789012,06-65432109,,e.visser@example.com,buurman.visser@example.com,
+203,Woning,Molenwerf 16-B,Mevr. S. Brouwer,Molenwerf 16-B 1011AB Amsterdam,06-67890123,06-54321098,06-99887766,s.brouwer@example.com,zoon.brouwer@example.com,werk.brouwer@example.com

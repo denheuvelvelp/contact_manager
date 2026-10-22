@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}{% if contact %}Bewoner Bewerken: {{ contact.naam }}{% else %}Nieuwe Bewoner Toevoegen{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Terugknop & Kop -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <a href="/contacten" class="p-2 text-slate-500 hover:text-slate-800 bg-white rounded-lg border border-slate-200 transition">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-xl font-bold text-slate-900">
+                    {% if contact %}Bewoner Gegevens: {{ contact.naam }}{% else %}Nieuwe Bewoner Invoeren{% endif %}
+                </h1>
+                <p class="text-xs text-slate-500">Coöperatieve Vereniging administratie</p>
+            </div>
+        </div>
+
+        {% if contact %}
+        <form method="POST" action="/contacten/{{ contact.id }}/verwijderen" onsubmit="return confirm('Weet je zeker dat je bewoner {{ contact.naam }} (Index: {{ contact.index_nummer }}) wilt verwijderen?');">
+            <button type="submit" class="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 rounded-lg text-xs font-semibold transition">
+                <i class="fa-solid fa-trash-can mr-1"></i> Verwijderen
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Formulier -->
+    <form method="POST" action="{% if contact %}/contacten/{{ contact.id }}{% else %}/contacten/nieuw{% endif %}" class="space-y-6">
+        
+        <!-- Sectie 1: Appartement & Rebo Sleutelvelden -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center text-brand-700 border-b border-slate-100 pb-2">
+                <i class="fa-solid fa-house mr-2"></i> 1. Appartement & Rebo Gegevens
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Index nummer *</label>
+                    <input 
+                        type="text" 
+                        name="index_nummer" 
+                        required 
+                        value="{{ contact.index_nummer if contact else '' }}" 
+                        placeholder="bijv. 101 of A-12" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                    <p class="text-[11px] text-slate-400 mt-0.5">Unieke index uit Rebo export</p>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Adres appartementsrecht *</label>
+                    <input 
+                        type="text" 
+                        name="adres_appartementsrecht" 
+                        required 
+                        value="{{ contact.adres_appartementsrecht if contact else '' }}" 
+                        placeholder="bijv. Molenwerf 12-A" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Bestemming</label>
+                    <input 
+                        type="text" 
+                        name="bestemming" 
+                        value="{{ contact.bestemming if contact else 'Woning' }}" 
+                        placeholder="Woning" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Etage / Verdieping</label>
+                    <input 
+                        type="text" 
+                        name="etage" 
+                        value="{{ contact.etage if contact else '' }}" 
+                        placeholder="bijv. 2e verdieping" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Intercom Naam</label>
+                    <input 
+                        type="text" 
+                        name="intercom_naam" 
+                        value="{{ contact.intercom_naam if contact else '' }}" 
+                        placeholder="Naam op bellenbord" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- Sectie 2: Bewoner & Primair Contact -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center text-brand-700 border-b border-slate-100 pb-2">
+                <i class="fa-solid fa-user mr-2"></i> 2. Bewonersgegevens (Primair)
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Volledige Naam *</label>
+                    <input 
+                        type="text" 
+                        name="naam" 
+                        required 
+                        value="{{ contact.naam if contact else '' }}" 
+                        placeholder="bijv. J. Jansen of Dhr. E. Visser" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Postadres</label>
+                    <input 
+                        type="text" 
+                        name="postadres" 
+                        value="{{ contact.postadres if contact else '' }}" 
+                        placeholder="Volledig postadres incl. postcode en plaats" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Telefoonnummer (Primair)</label>
+                    <input 
+                        type="tel" 
+                        name="telefoonnummer" 
+                        value="{{ contact.telefoonnummer if contact else '' }}" 
+                        placeholder="06-12345678" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail (Primair)</label>
+                    <input 
+                        type="email" 
+                        name="email" 
+                        value="{{ contact.email if contact else '' }}" 
+                        placeholder="bewoner@example.com" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- Sectie 3: Twee Noodcontacten (De kernwens) -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-red-700 uppercase tracking-wider flex items-center border-b border-red-100 pb-2">
+                <i class="fa-solid fa-kit-medical mr-2"></i> 3. Noodcontactpersonen (2x)
+            </h2>
+            <p class="text-xs text-slate-500">
+                Wordt gebruikt door de huismeester en hulpdiensten bij incidenten, storingen of calamiteiten.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <!-- Noodcontact 1 -->
+                <div class="p-4 bg-red-50/50 rounded-xl border border-red-100 space-y-3">
+                    <span class="inline-block px-2.5 py-0.5 rounded bg-red-100 text-red-800 text-xs font-bold uppercase tracking-wider">
+                        Noodcontactpersoon 1
+                    </span>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Naam contactpersoon 1</label>
+                        <input 
+                            type="text" 
+                            name="noodcontactpersoon_1" 
+                            value="{{ contact.noodcontactpersoon_1 if contact else '' }}" 
+                            placeholder="bijv. Familie / Dochter / Buurman" 
+                            class="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-400 focus:outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Noodtelefoonnummer 1 (Telefoonnummer 2)</label>
+                        <input 
+                            type="tel" 
+                            name="telefoonnummer_2" 
+                            value="{{ contact.telefoonnummer_2 if contact else '' }}" 
+                            placeholder="06-98765432" 
+                            class="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-red-400 focus:outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nood-e-mail 1 (Email 2)</label>
+                        <input 
+                            type="email" 
+                            name="email_2" 
+                            value="{{ contact.email_2 if contact else '' }}" 
+                            placeholder="nood1@example.com" 
+                            class="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-400 focus:outline-none"
+                        />
+                    </div>
+                </div>
+
+                <!-- Noodcontact 2 -->
+                <div class="p-4 bg-orange-50/50 rounded-xl border border-orange-100 space-y-3">
+                    <span class="inline-block px-2.5 py-0.5 rounded bg-orange-100 text-orange-800 text-xs font-bold uppercase tracking-wider">
+                        Noodcontactpersoon 2
+                    </span>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Naam contactpersoon 2</label>
+                        <input 
+                            type="text" 
+                            name="noodcontactpersoon_2" 
+                            value="{{ contact.noodcontactpersoon_2 if contact else '' }}" 
+                            placeholder="bijv. Zoon / Mantelzorger / Ouders" 
+                            class="w-full px-3 py-2 bg-white border border-orange-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Noodtelefoonnummer 2 (Telefoonnummer 3)</label>
+                        <input 
+                            type="tel" 
+                            name="telefoonnummer_3" 
+                            value="{{ contact.telefoonnummer_3 if contact else '' }}" 
+                            placeholder="020-5551234" 
+                            class="w-full px-3 py-2 bg-white border border-orange-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nood-e-mail 2 (Email 3)</label>
+                        <input 
+                            type="email" 
+                            name="email_3" 
+                            value="{{ contact.email_3 if contact else '' }}" 
+                            placeholder="nood2@example.com" 
+                            class="w-full px-3 py-2 bg-white border border-orange-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sectie 4: Calamiteiten & Huismeester Veiligheidsnotities -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center text-brand-700 border-b border-slate-100 pb-2">
+                <i class="fa-solid fa-clipboard-list mr-2"></i> 4. Calamiteiten & Notities Huismeester
+            </h2>
+
+            <div class="space-y-4">
+                <!-- Minder Mobiel Vlag -->
+                <div class="p-4 bg-amber-50 rounded-lg border border-amber-200 flex items-start space-x-3">
+                    <input 
+                        type="checkbox" 
+                        id="minder_mobiel" 
+                        name="minder_mobiel" 
+                        value="1" 
+                        {% if contact and contact.minder_mobiel %}checked{% endif %}
+                        class="mt-1 h-5 w-5 text-amber-600 rounded border-slate-300 focus:ring-amber-500"
+                    />
+                    <label for="minder_mobiel" class="text-sm">
+                        <span class="font-bold text-amber-900 block flex items-center">
+                            <i class="fa-solid fa-wheelchair mr-1.5"></i> Bewoner is minder mobiel / zorgbehoevend
+                        </span>
+                        <span class="text-xs text-amber-800">
+                            Aanvinken als deze bewoner bij ontruiming, brandalarm of stroomuitval extra assistentie nodig heeft van de hulpdiensten.
+                        </span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Huisdieren</label>
+                        <input 
+                            type="text" 
+                            name="huisdieren" 
+                            value="{{ contact.huisdieren if contact else '' }}" 
+                            placeholder="bijv. 1 hond, 2 katten" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Interne Notities Huismeester</label>
+                        <input 
+                            type="text" 
+                            name="notities" 
+                            value="{{ contact.notities if contact else '' }}" 
+                            placeholder="bijv. Sleutel bij buurman 14-A bij afwezigheid" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Opslaan Knoppen -->
+        <div class="flex items-center justify-end space-x-3 pt-2">
+            <a href="/contacten" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition">
+                Annuleren
+            </a>
+            <button type="submit" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-bold shadow-md transition flex items-center space-x-2">
+                <i class="fa-solid fa-check"></i>
+                <span>{% if contact %}Wijzigingen Opslaan{% else %}Bewoner Toevoegen{% endif %}</span>
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}
