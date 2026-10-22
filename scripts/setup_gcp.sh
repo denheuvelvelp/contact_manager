@@ -64,6 +64,8 @@ if ! gcloud iam service-accounts describe "$SA_EMAIL" --project="$PROJECT_ID" >/
         --display-name="GitHub Actions Deployer" \
         --project="$PROJECT_ID"
     echo "Service Account $SA_EMAIL aangemaakt."
+    echo "Wachten op IAM-synchronisatie in Google Cloud (7 seconden)..."
+    sleep 7
 else
     echo "Service Account $SA_EMAIL bestaat al."
 fi
@@ -78,12 +80,24 @@ ROLES=(
 )
 
 for role in "${ROLES[@]}"; do
-    gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-        --member="serviceAccount:${SA_EMAIL}" \
-        --role="$role" \
-        --condition=None \
-        --quiet >/dev/null
-    echo "Rol toegekend: $role"
+    echo "Rol toekennen: $role..."
+    # Retry-loop i.v.m. Google IAM eventual consistency
+    for attempt in 1 2 3 4 5; do
+        if gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+            --member="serviceAccount:${SA_EMAIL}" \
+            --role="$role" \
+            --quiet >/dev/null 2>&1; then
+            echo "✓ Rol toegekend: $role"
+            break
+        fi
+        if [ "$attempt" -eq 5 ]; then
+            # Laatste poging: toon eventuele melding
+            gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+                --member="serviceAccount:${SA_EMAIL}" \
+                --role="$role"
+        fi
+        sleep 3
+    done
 done
 
 # Sleutel genereren voor GitHub Secrets
@@ -109,3 +123,4 @@ echo "   Kopieer de volledige inhoud van het bestand: $KEY_FILE"
 echo ""
 echo "Daarna zal elke push naar 'main' de applicatie automatisch deployen naar Cloud Run!"
 echo "=========================================================="
+
