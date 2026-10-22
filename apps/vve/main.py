@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from .config import settings
@@ -25,6 +26,11 @@ app = FastAPI(
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+# Statische bestanden (logo's, afbeeldingen, iconen)
+static_dir = BASE_DIR / "static"
+static_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
 @app.middleware("http")
@@ -54,9 +60,15 @@ def healthcheck():
     return {"status": "ok", "app": settings.app_name, "version": settings.app_version}
 
 
-@app.get("/", response_class=RedirectResponse)
-def index_redirect():
-    return RedirectResponse(url="/contacten", status_code=302)
+@app.get("/", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
+def page_vve_dashboard(request: Request):
+    """Portaal Dashboard conform het voorgestelde ontwerp."""
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard.html",
+        context={"user": auth.get_current_user(request), "active_page": "dashboard"}
+    )
 
 
 @app.get("/contacten", response_class=HTMLResponse)

@@ -1,16 +1,22 @@
 <!DOCTYPE html>
-<html lang="nl" class="h-full bg-slate-50">
+<html lang="nl" class="h-full bg-slate-100/70">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Coöperatieve Vereniging - Huismeester Contactmanager{% endblock %}</title>
+    <title>{% block title %}Den Heuvel Portaal - Coöperatieve Vereniging{% endblock %}</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
                     colors: {
                         brand: {
                             50: '#f0fdf4',
@@ -26,56 +32,78 @@
             }
         }
     </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+        }
+        .header-banner {
+            background-color: #293848;
+            background-image: 
+                linear-gradient(90deg, #243342 0%, rgba(36, 51, 66, 0.95) 28%, rgba(36, 51, 66, 0.75) 55%, rgba(36, 51, 66, 0.3) 100%),
+                url('/static/header.png');
+            background-position: right center;
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+    </style>
 </head>
-<body class="h-full flex flex-col text-slate-800 antialiased">
+<body class="min-h-full flex flex-col text-slate-800 antialiased bg-[#f4f6f8]">
 
-    <!-- Top Navigatiebar -->
-    <header class="bg-brand-800 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <!-- Logo & Titel -->
-                <div class="flex items-center space-x-3">
-                    <span class="p-2 bg-brand-700 rounded-lg text-emerald-200">
-                        <i class="fa-solid fa-building-user text-xl"></i>
-                    </span>
-                    <div>
-                        <a href="/contacten" class="font-bold text-lg tracking-tight hover:text-brand-100 transition">
-                            Huismeester Portaal
-                        </a>
-                        <span class="hidden sm:inline-block ml-2 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-900 text-emerald-200 border border-emerald-700">
-                            Coöperatieve Vereniging
-                        </span>
+    <!-- Bovenste Header volgens voorgesteld ontwerp -->
+    <header class="header-banner text-white shadow-md relative z-40 border-b border-slate-700/50">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                
+                <!-- Logo: Den Heuvel Portaal -->
+                <a href="/dashboard" class="flex items-center space-x-3 group">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shadow-inner group-hover:bg-white/20 transition">
+                            <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2L13.5 6.5H16.5L14 8.5L15 13L12 10.5L9 13L10 8.5L7.5 6.5H10.5L12 2Z" opacity="0.3"/>
+                                <path d="M3 21h18v-2H3v2zm3-4h3V9H6v8zm2-6h1v1H8v-1zm0 2h1v1H8v-1zm0 2h1v1H8v-1zm5 2h3V3h-3v14zm2-12h1v1h-1V5zm0 2h1v1h-1V7zm0 2h1v1h-1V9zm0 2h1v1h-1v-1zm0 2h1v1h-1v-1zm5 4h3v-8h-3v8zm1-6h1v1h-1v-1zm0 2h1v1h-1v-1z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-lg font-black tracking-wider text-white uppercase flex items-center gap-1.5 leading-none">
+                                DEN HEUVEL
+                            </div>
+                            <div class="text-[10px] tracking-[0.2em] font-semibold text-slate-300 uppercase mt-0.5">
+                                PORTAAL &bull; COÖPERATIE
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </a>
 
-                <!-- Navigatie Links -->
-                <nav class="flex items-center space-x-2 sm:space-x-4">
-                    <a href="/contacten" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-brand-700 transition flex items-center space-x-1">
-                        <i class="fa-solid fa-address-book"></i>
-                        <span>Contacten</span>
+                <!-- Zwevende Transparante Navigatiebalk -->
+                <nav class="glass-nav rounded-full p-1.5 flex items-center space-x-1 shadow-lg shadow-black/10 text-xs sm:text-sm font-semibold">
+                    <a href="/dashboard" class="px-3.5 py-1.5 rounded-full transition {% if request.url.path == '/dashboard' or request.url.path == '/' %}bg-slate-900 text-white shadow-sm font-bold{% else %}text-slate-100 hover:text-white hover:bg-white/15{% endif %}">
+                        Dashboard
                     </a>
-                    <a href="/mailinglijsten" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-brand-700 transition flex items-center space-x-1">
-                        <i class="fa-solid fa-envelope-open-text"></i>
-                        <span>Mailinglijsten</span>
+                    <a href="/contacten" class="px-3.5 py-1.5 rounded-full transition {% if request.url.path.startswith('/contacten') %}bg-slate-900 text-white shadow-sm font-bold{% else %}text-slate-100 hover:text-white hover:bg-white/15{% endif %}">
+                        Bewoners
                     </a>
-                    <a href="/importeren" class="px-3 py-2 rounded-md text-sm font-medium bg-brand-600 hover:bg-brand-500 transition flex items-center space-x-1 shadow-sm">
-                        <i class="fa-solid fa-file-csv"></i>
-                        <span>CSV Importeren</span>
+                    <a href="/mailinglijsten" class="px-3.5 py-1.5 rounded-full transition {% if request.url.path.startswith('/mailinglijsten') %}bg-slate-900 text-white shadow-sm font-bold{% else %}text-slate-100 hover:text-white hover:bg-white/15{% endif %}">
+                        Mailinglijsten
                     </a>
-                    <a href="/contacten/nieuw" class="px-3 py-2 rounded-md text-sm font-medium bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-semibold transition flex items-center space-x-1 shadow-sm">
-                        <i class="fa-solid fa-user-plus"></i>
-                        <span class="hidden md:inline">Nieuw Contact</span>
+                    <a href="/importeren" class="px-3.5 py-1.5 rounded-full transition {% if request.url.path.startswith('/importeren') %}bg-slate-900 text-white shadow-sm font-bold{% else %}text-slate-100 hover:text-white hover:bg-white/15{% endif %}">
+                        CSV Import
+                    </a>
+                    <a href="#contactModal" onclick="document.getElementById('contactModal').classList.remove('hidden')" class="px-3.5 py-1.5 rounded-full text-slate-100 hover:text-white hover:bg-white/15 transition">
+                        Contact
                     </a>
 
-                    <!-- Ingelogde Gebruiker & Uitloggen -->
+                    <!-- Gebruiker Avatar & Dropdown -->
                     {% if user %}
-                    <div class="flex items-center pl-2 sm:pl-4 border-l border-brand-700 space-x-2">
-                        <span class="text-xs text-emerald-200 hidden lg:inline-block font-medium truncate max-w-[150px]" title="{{ user.email }}">
-                            <i class="fa-solid fa-circle-user mr-1"></i>{{ user.email }}
-                        </span>
-                        <a href="/logout" class="px-2.5 py-1.5 bg-brand-900 hover:bg-red-900 text-emerald-200 hover:text-white rounded-md text-xs font-semibold transition flex items-center space-x-1 border border-brand-700 hover:border-red-700" title="Uitloggen">
+                    <div class="relative pl-1 border-l border-white/20 flex items-center space-x-2">
+                        <div class="w-7 h-7 rounded-full bg-emerald-600 border border-white/40 flex items-center justify-center text-white text-xs font-bold uppercase shadow-sm" title="{{ user.email }}">
+                            {{ user.email[0] }}
+                        </div>
+                        <a href="/logout" class="px-2 py-1 rounded-full text-[11px] text-slate-200 hover:text-white hover:bg-red-900/60 transition" title="Uitloggen ({{ user.email }})">
                             <i class="fa-solid fa-right-from-bracket"></i>
-                            <span class="hidden sm:inline">Uitloggen</span>
                         </a>
                     </div>
                     {% endif %}
@@ -85,24 +113,64 @@
     </header>
 
     <!-- Hoofdinhoud -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
             <div>
-                <strong>Huismeester Contactmanager</strong> &bull; Coöperatieve Vereniging &bull; Fase 1 (Rebo CSV Import)
+                <strong>Den Heuvel Portaal</strong> &bull; Coöperatieve Vereniging &bull; Huismeester Beheersysteem
             </div>
             <div class="flex items-center space-x-4">
-                <span><i class="fa-solid fa-shield-halved text-brand-600 mr-1"></i>Bestaande contacten beschermd</span>
-                <span><i class="fa-brands fa-google text-slate-400 mr-1"></i>Cloud Ready</span>
+                <span><i class="fa-solid fa-shield-halved text-emerald-600 mr-1"></i>Beveiligd met Google Workspace (@denheuvelvelp.nl)</span>
+                <span><i class="fa-solid fa-cloud text-slate-400 mr-1"></i>Google Cloud Native</span>
             </div>
         </div>
     </footer>
 
+    <!-- Contact Modal -->
+    <div id="contactModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-bold">
+                        <i class="fa-solid fa-address-card"></i>
+                    </span>
+                    <h3 class="font-bold text-slate-900 text-base">Huismeester &amp; Beheer Contact</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('contactModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-sm text-slate-700">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                    <div class="text-xs font-semibold uppercase text-slate-500">Huismeester Kantoor</div>
+                    <div class="font-bold text-slate-900">Complex Den Heuvel</div>
+                    <div class="text-xs text-slate-600">Bereikbaar op werkdagen van 08:30 tot 16:30</div>
+                </div>
+                <div class="flex items-center space-x-3 p-2">
+                    <i class="fa-solid fa-envelope text-emerald-600 text-base"></i>
+                    <span class="font-mono text-xs">huismeester@denheuvelvelp.nl</span>
+                </div>
+                <div class="flex items-center space-x-3 p-2">
+                    <i class="fa-solid fa-phone text-emerald-600 text-base"></i>
+                    <span class="text-xs font-semibold">026 - 361 23 45 (Centrale balie)</span>
+                </div>
+                <div class="flex items-center space-x-3 p-2 bg-red-50 text-red-900 rounded-lg">
+                    <i class="fa-solid fa-triangle-exclamation text-red-600"></i>
+                    <span class="text-xs font-bold">Calamiteiten &amp; Nood: 06 - 12345678 (24/7)</span>
+                </div>
+            </div>
+            <div class="pt-2 flex justify-end">
+                <button type="button" onclick="document.getElementById('contactModal').classList.add('hidden')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-lg hover:bg-slate-700 transition">
+                    Sluiten
+                </button>
+            </div>
+        </div>
+    </div>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
-

@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Den Heuvel Portaal - VvE Complex{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- KPI / Welkomstbalk -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+        <div>
+            <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">VvE Complex Overzicht &amp; Beheer</h1>
+            <p class="text-xs sm:text-sm text-slate-500">Welkom in het Den Heuvel Portaal voor de Vereniging van Eigenaren.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-900 border border-blue-200 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-blue-600 mr-2 animate-pulse"></span>
+                VvE Beheer &bull; Cloud Actief
+            </span>
+        </div>
+    </div>
+
+    <!-- Hoofdgrid (3 Kolommen zoals in het voorgestelde ontwerp) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- ================= KOLOM 1: PARKEERTERREIN & GARAGEBOXEN (5/12 cols) ================= -->
+        <div class="lg:col-span-5 space-y-4">
+            
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden">
+                <!-- Kaart Header & Knoppen -->
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="p-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm">
+                            <i class="fa-solid fa-square-parking"></i>
+                        </span>
+                        <h2 class="font-bold text-slate-900 text-sm">Parkeerterrein &amp; Garageboxen (501+)</h2>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <button type="button" onclick="zoomMap(1.1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition shadow-xs" title="Inzoomen">
+                            +
+                        </button>
+                        <button type="button" onclick="zoomMap(0.9)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition shadow-xs" title="Uitzoomen">
+                            -
+                        </button>
+                        <button type="button" onclick="resetZoom()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs flex items-center justify-center transition shadow-xs" title="Herstellen">
+                            <i class="fa-solid fa-expand text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Schematische Interactieve Kaart (Asfalt layout) -->
+                <div class="relative bg-[#3b444b] p-4 sm:p-5 overflow-hidden min-h-[310px] flex items-center justify-center select-none" id="mapContainer">
+                    <div id="mapCanvas" class="w-full max-w-[420px] bg-[#eef1f4] rounded-xl p-4 shadow-inner relative transition-transform duration-200">
+                        
+                        <!-- Bovenste rij parkeervakken (12 vakken) -->
+                        <div class="flex justify-between items-center gap-1 mb-6">
+                            {% for i in range(1, 13) %}
+                            {% set is_occupied = (i in [2, 3, 7, 8, 11, 12]) %}
+                            <div onclick="selectBay('Vak P-{{ "%02d"|format(i) }}', '{{ 'Bezet' if is_occupied else 'Beschikbaar' }}')" class="w-5 h-8 sm:w-6 sm:h-9 rounded-sm flex items-center justify-center text-[9px] font-bold cursor-pointer transition transform hover:scale-110 shadow-xs {% if is_occupied %}bg-[#e05638] text-white{% else %}bg-[#2e9e5b] text-white{% endif %}" title="Vak P-{{ "%02d"|format(i) }}: {{ 'Bezet' if is_occupied else 'Beschikbaar' }}">
+                                {{ i }}
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Middenzone met Linker & Rechter vakken + Rijbaan -->
+                        <div class="flex justify-between items-stretch gap-2 my-2 min-h-[100px]">
+                            <!-- Linker verticale kolom (Garages 501-506) -->
+                            <div class="flex flex-col justify-between gap-1">
+                                {% for i in range(501, 507) %}
+                                {% set is_occupied = (i in [501, 503, 504]) %}
+                                <div onclick="selectBay('Garagebox {{ i }}', '{{ 'Toegewezen (Bezet)' if is_occupied else 'Beschikbaar' }}')" class="w-8 h-4 sm:w-9 sm:h-4.5 rounded-sm flex items-center justify-center text-[8px] font-bold cursor-pointer transition transform hover:scale-110 shadow-xs {% if is_occupied %}bg-[#e05638] text-white{% else %}bg-[#2e9e5b] text-white{% endif %}" title="Garagebox {{ i }}: {{ 'Bezet' if is_occupied else 'Vrij' }}">
+                                    G{{ i - 500 }}
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Centrale Rijbaan & Tekens -->
+                            <div class="flex-1 flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-lg p-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Rijbaan &bull; Eenrichting</span>
+                                <i class="fa-solid fa-arrow-right text-slate-300 text-xs mt-1"></i>
+                            </div>
+
+                            <!-- Rechter verticale kolom (3 vakken) -->
+                            <div class="flex flex-col justify-start gap-1">
+                                {% for i in range(19, 22) %}
+                                {% set is_occupied = (i == 20) %}
+                                <div onclick="selectBay('Vak P-{{ i }}', '{{ 'Bezet' if is_occupied else 'Beschikbaar' }}')" class="w-8 h-4 sm:w-9 sm:h-4.5 rounded-sm flex items-center justify-center text-[9px] font-bold cursor-pointer transition transform hover:scale-110 shadow-xs {% if is_occupied %}bg-[#e05638] text-white{% else %}bg-[#2e9e5b] text-white{% endif %}" title="Vak P-{{ i }}: {{ 'Bezet' if is_occupied else 'Beschikbaar' }}">
+                                    {{ i }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Onderste rij parkeervakken (12 vakken) -->
+                        <div class="flex justify-between items-center gap-1 mt-6">
+                            {% for i in range(22, 34) %}
+                            {% set is_occupied = (i in [22, 25, 26, 30, 31]) %}
+                            <div onclick="selectBay('Vak P-{{ i }}', '{{ 'Bezet' if is_occupied else 'Beschikbaar' }}')" class="w-5 h-8 sm:w-6 sm:h-9 rounded-sm flex items-center justify-center text-[9px] font-bold cursor-pointer transition transform hover:scale-110 shadow-xs {% if is_occupied %}bg-[#e05638] text-white{% else %}bg-[#2e9e5b] text-white{% endif %}" title="Vak P-{{ i }}: {{ 'Bezet' if is_occupied else 'Beschikbaar' }}">
+                                {{ i }}
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+
+                    <!-- Ingezette Luchtfoto van het Parkeerterrein (zoals in ontwerp) -->
+                    <div class="absolute bottom-2 right-2 w-48 sm:w-56 rounded-lg overflow-hidden border-2 border-white/80 shadow-2xl backdrop-blur-xs transition hover:scale-105 duration-200">
+                        <img src="/static/parking_photo.png" alt="Den Heuvel Parkeerterrein" class="w-full h-auto object-cover opacity-95">
+                        <div class="absolute bottom-0 inset-x-0 bg-slate-900/60 text-white text-[9px] px-2 py-0.5 text-center font-medium">
+                            Live Terreinbeeld
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Geselecteerd Vak Details Balk -->
+                <div id="bayDetailBar" class="hidden px-4 py-2 bg-slate-50 border-t border-slate-200 text-xs flex items-center justify-between">
+                    <span id="bayDetailText" class="font-semibold text-slate-800"></span>
+                    <button type="button" onclick="document.getElementById('bayDetailBar').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Onderkant: Bezoekersregistratie -->
+                <div class="p-4 sm:p-5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="space-y-0.5">
+                        <h3 class="font-bold text-slate-900 text-sm">Bezoekersregistratie</h3>
+                        <p class="text-xs text-slate-500">
+                            Bezoekersregistratie voor parkeerterrein, evenementen en gasten rondom het gebouw.
+                        </p>
+                    </div>
+                    <button type="button" onclick="document.getElementById('bezoekerModal').classList.remove('hidden')" class="shrink-0 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center space-x-1.5">
+                        <i class="fa-solid fa-car"></i>
+                        <span>Bezoeker Aanmelden</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= KOLOM 2: ACTUEEL & AGENDA (3.5/12 cols) ================= -->
+        <div class="lg:col-span-4 space-y-5">
+            
+            <!-- Actueel & Mededelingen Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 p-5 space-y-4">
+                <div class="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <h2 class="font-bold text-slate-900 text-sm">Actueel &amp; Mededelingen</h2>
+                    <button type="button" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-ellipsis"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Bericht 1: Recente Updates (Klok/Bel) -->
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-900 flex items-center justify-center shrink-0 text-xs border border-blue-200">
+                            <i class="fa-solid fa-bell"></i>
+                        </div>
+                        <div class="space-y-0.5">
+                            <div class="text-xs font-bold text-slate-900">Recente Updates</div>
+                            <p class="text-xs text-slate-600 leading-snug">
+                                VvE Den Heuvel: voorbereidingen ALV begroting en meerjarenonderhoudsplan gestart.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Bericht 2: Mededelingen (Megaphone) -->
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 text-xs border border-amber-200">
+                            <i class="fa-solid fa-bullhorn"></i>
+                        </div>
+                        <div class="space-y-0.5">
+                            <div class="text-xs font-bold text-slate-900">Mededelingen</div>
+                            <p class="text-xs text-slate-600 leading-snug">
+                                Garageboxhouders: controle van de elektrische roldeuren en verlichting vindt dinsdag plaats.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 text-center">
+                    <button type="button" onclick="alert('Alle VvE mededelingen zijn up-to-date.')" class="px-4 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">
+                        View more
+                    </button>
+                </div>
+            </div>
+
+            <!-- Activiteiten & Agenda Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 p-5 space-y-4">
+                <div class="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <h2 class="font-bold text-slate-900 text-sm">Activiteiten &amp; Agenda</h2>
+                    <div class="flex items-center space-x-2 text-slate-400 text-xs">
+                        <button type="button" class="hover:text-slate-700 p-0.5"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button type="button" class="hover:text-slate-700 p-0.5"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- Maandkalender Widget -->
+                <div class="text-center">
+                    <div class="grid grid-cols-7 text-[11px] font-semibold text-slate-400 mb-2">
+                        <span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Th</span><span>Fr</span><span>Sa</span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-y-1.5 text-xs text-slate-700 items-center">
+                        <span class="text-slate-300">29</span>
+                        <span class="text-slate-300">30</span>
+                        <span class="text-slate-300">31</span>
+                        <span>1</span>
+                        <span>2</span>
+                        <span>3</span>
+                        <span>4</span>
+
+                        <span>5</span>
+                        <span>6</span>
+                        <span>7</span>
+                        <span>8</span>
+                        <span>9</span>
+                        <span>10</span>
+                        <span>11</span>
+
+                        <span>12</span>
+                        <span>13</span>
+                        <!-- Actieve Dag 14 -->
+                        <span class="w-6 h-6 mx-auto rounded-full bg-slate-900 text-white font-bold flex items-center justify-center text-xs shadow-sm">14</span>
+                        <span>15</span>
+                        <span>16</span>
+                        <span>17</span>
+                        <span>18</span>
+
+                        <span>19</span>
+                        <span>20</span>
+                        <span>21</span>
+                        <span>22</span>
+                        <span>23</span>
+                        <span>24</span>
+                        <span>25</span>
+
+                        <span>26</span>
+                        <span>27</span>
+                        <span>28</span>
+                        <span>29</span>
+                        <span>30</span>
+                        <span>1</span>
+                        <span class="text-slate-300">2</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                    <span><i class="fa-solid fa-calendar-check text-blue-600 mr-1"></i>VvE Vergadering: 14e v.d. maand</span>
+                    <span class="font-semibold text-slate-700">Oktober 2026</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= KOLOM 3: ONDERHOUD & SNELKOPPELINGEN (3.5/12 cols) ================= -->
+        <div class="lg:col-span-3 space-y-5">
+            
+            <!-- Onderhoud & Planning Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 p-5 space-y-4">
+                <div class="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <h2 class="font-bold text-slate-900 text-sm">Onderhoud &amp; Planning</h2>
+                    <button type="button" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-ellipsis"></i>
+                    </button>
+                </div>
+
+                <!-- Tabel met statussen -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="text-slate-400 font-semibold border-b border-slate-100 pb-1">
+                                <th class="pb-2 font-medium">Date</th>
+                                <th class="pb-2 font-medium text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr>
+                                <td class="py-2.5 font-medium text-slate-800">30. Jun 2026</td>
+                                <td class="py-2.5 text-right">
+                                    <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fde8e4] text-[#b83822] border border-[#f8c4bc]">
+                                        In behandeling
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 font-medium text-slate-800">28. Jun 2026</td>
+                                <td class="py-2.5 text-right">
+                                    <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#e6f6ee] text-[#1e7e4a] border border-[#bdecd1]">
+                                        Voltooid
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 font-medium text-slate-800">20. Jun 2026</td>
+                                <td class="py-2.5 text-right">
+                                    <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fde8e4] text-[#b83822] border border-[#f8c4bc]">
+                                        In behandeling
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 font-medium text-slate-800">20. Jun 2026</td>
+                                <td class="py-2.5 text-right">
+                                    <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#e6f6ee] text-[#1e7e4a] border border-[#bdecd1]">
+                                        Voltooid
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Snelkoppelingen Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 p-5 space-y-3">
+                <h2 class="font-bold text-slate-900 text-sm">Snelkoppelingen</h2>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Knop 1: Leden & Eigenaren -->
+                    <a href="/contacten" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/70 flex flex-col items-center justify-center text-center transition group shadow-2xs">
+                        <i class="fa-solid fa-users-gear text-slate-700 text-lg mb-1.5 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold text-slate-800">Leden</span>
+                    </a>
+
+                    <!-- Knop 2: Reserveringen / Mailinglijsten -->
+                    <a href="/mailinglijsten" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/70 flex flex-col items-center justify-center text-center transition group shadow-2xs">
+                        <i class="fa-solid fa-envelope-open-text text-slate-700 text-lg mb-1.5 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold text-slate-800">Mailinglijsten</span>
+                    </a>
+
+                    <!-- Knop 3: Onderhoud -->
+                    <a href="#contactModal" onclick="document.getElementById('contactModal').classList.remove('hidden')" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/70 flex flex-col items-center justify-center text-center transition group shadow-2xs">
+                        <i class="fa-solid fa-wrench text-slate-700 text-lg mb-1.5 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold text-slate-800">Onderhoud</span>
+                    </a>
+
+                    <!-- Knop 4: Contact -->
+                    <button type="button" onclick="document.getElementById('contactModal').classList.remove('hidden')" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/70 flex flex-col items-center justify-center text-center transition group shadow-2xs">
+                        <i class="fa-solid fa-comment-dots text-slate-700 text-lg mb-1.5 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold text-slate-800">Contact</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Modal voor Bezoekersregistratie -->
+<div id="bezoekerModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+                <i class="fa-solid fa-car text-slate-700"></i>
+                <span>Nieuwe Bezoeker Registreren</span>
+            </h3>
+            <button type="button" onclick="document.getElementById('bezoekerModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        <form onsubmit="event.preventDefault(); alert('Bezoeker met kenteken succesvol geregistreerd voor het parkeerterrein.'); document.getElementById('bezoekerModal').classList.add('hidden');" class="space-y-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Kenteken *</label>
+                <input type="text" placeholder="Bijv. GG-123-X" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm uppercase font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-slate-800">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Appartement / Eigenaar *</label>
+                <input type="text" placeholder="Bijv. Den Heuvel 101 of Garagebox 501" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-800">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Datum &amp; Tijdsduur</label>
+                <input type="text" value="Vandaag (24 uur geldig)" readonly class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-600">
+            </div>
+            <div class="pt-3 flex justify-end space-x-2">
+                <button type="button" onclick="document.getElementById('bezoekerModal').classList.add('hidden')" class="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition">
+                    Annuleren
+                </button>
+                <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition shadow-sm">
+                    Aanmelden
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let currentZoom = 1.0;
+function zoomMap(factor) {
+    currentZoom *= factor;
+    if (currentZoom < 0.7) currentZoom = 0.7;
+    if (currentZoom > 1.6) currentZoom = 1.6;
+    document.getElementById("mapCanvas").style.transform = `scale(${currentZoom})`;
+}
+function resetZoom() {
+    currentZoom = 1.0;
+    document.getElementById("mapCanvas").style.transform = "scale(1)";
+}
+function selectBay(bayName, status) {
+    const bar = document.getElementById("bayDetailBar");
+    const text = document.getElementById("bayDetailText");
+    bar.classList.remove("hidden");
+    text.innerHTML = `<i class="fa-solid fa-location-dot mr-1.5 text-slate-600"></i> ${bayName}: <strong>${status}</strong> &bull; VvE Complex Den Heuvel`;
+}
+</script>
+{% endblock %}

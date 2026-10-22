@@ -30,6 +30,15 @@ def test_health_check(client):
     assert response.json()["status"] == "ok"
 
 
+def test_dashboard_page(client):
+    response = client.get("/dashboard")
+    assert response.status_code == 200
+    assert "DEN HEUVEL" in response.text
+    assert "Parkeerterrein &amp; Vakken" in response.text
+    assert "Bezoekersregistratie" in response.text
+
+
+
 def test_auth_redirect_when_not_logged_in():
     # Nieuwe ongeauthenticeerde client zonder sessie
     unauthed = TestClient(app)

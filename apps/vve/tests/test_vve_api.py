@@ -30,6 +30,15 @@ def test_vve_health_check(client):
     assert res.json()["status"] == "ok"
 
 
+def test_vve_dashboard_page(client):
+    res = client.get("/dashboard")
+    assert res.status_code == 200
+    assert "DEN HEUVEL" in res.text
+    assert "Parkeerterrein &amp; Garageboxen" in res.text
+    assert "Bezoekersregistratie" in res.text
+
+
+
 def test_vve_auth_redirect_when_not_logged_in():
     unauthed = TestClient(app)
     res = unauthed.get("/contacten", follow_redirects=False)
