@@ -71,7 +71,7 @@ jobs:
 
       - name: Deploy Coöperatieve Service naar Cloud Run
         id: deploy-coop
-        uses: google-github-actions/deploy-cloudrun@v2
+        uses: google-github-actions/deploy-cloudrun@v3
         with:
           service: cooperatie-service
           region: ${{ env.REGION }}
@@ -97,7 +97,7 @@ jobs:
 
       - name: Deploy VvE Service naar Cloud Run
         id: deploy-vve
-        uses: google-github-actions/deploy-cloudrun@v2
+        uses: google-github-actions/deploy-cloudrun@v3
         with:
           service: vve-service
           region: ${{ env.REGION }}
