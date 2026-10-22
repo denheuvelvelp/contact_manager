@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "contact-manager-vve"
+  },
+  "targets": {
+    "contact-manager-vve": {
+      "hosting": {
+        "cooperatie": [
+          "cooperatie-app"
+        ]
+      }
+    }
+  }
+}

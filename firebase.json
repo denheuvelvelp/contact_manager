@@ -1,0 +1,22 @@
+{
+  "hosting": [
+    {
+      "target": "cooperatie",
+      "public": "apps/cooperatie/public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "run": {
+            "serviceId": "cooperatie-service",
+            "region": "europe-west4"
+          }
+        }
+      ]
+    }
+  ]
+}

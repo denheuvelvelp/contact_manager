@@ -55,6 +55,19 @@ pytest -v
 
 ---
 
+## Deployment naar Google Cloud & Firebase (Fase 2)
+
+Zie voor de complete stap-voor-stap handleiding: [DEPLOYMENT.md](DEPLOYMENT.md).
+
+De GitHub Actions pipeline ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) bouwt en publiceert de applicatie automatisch bij elke push naar `main`:
+1. Voert alle unittests uit.
+2. Bouwt de Docker container en pusht naar **Google Artifact Registry** (`europe-west4`).
+3. Rolt uit naar **Google Cloud Run** (`cooperatie-service`).
+4. Configureert **Firebase Hosting** met automatische SSL-certificaten en CDN-caching.
+5. Slaat gegevens op in **Google Cloud Firestore**.
+
+---
+
 ## Structuur Monorepo
 
 ```

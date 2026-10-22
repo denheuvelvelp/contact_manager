@@ -277,3 +277,4 @@ async def api_import_csv(file: UploadFile = File(...)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("apps.cooperatie.main:app", host="0.0.0.0", port=settings.port, reload=True)
+
