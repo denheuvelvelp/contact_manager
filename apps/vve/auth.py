@@ -29,11 +29,27 @@ def require_auth(request: Request):
 
 
 @auth_router.get("/login", response_class=HTMLResponse)
-def login_page(request: Request, next: Optional[str] = "/contacten"):
+def login_page(request: Request, next: Optional[str] = "/contacten", missing_oauth: Optional[int] = None):
     if get_current_user(request):
         return RedirectResponse(url=next or "/contacten", status_code=303)
 
     is_configured = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
+
+    warning_banner = ""
+    if missing_oauth or not is_configured:
+        warning_banner = f"""
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-1">
+            <p class="font-bold flex items-center">
+                <i class="fa-solid fa-triangle-exclamation mr-1.5 text-amber-600"></i> Google OAuth sleutels ontbreken nog
+            </p>
+            <p class="text-amber-800">
+                Om lokaal te testen kun je direct op de knop <strong>'Direct inloggen als beheerder'</strong> hieronder klikken.
+            </p>
+            <p class="text-slate-500 text-[11px] pt-1">
+                Voor productie in Google Cloud stel je <code class="bg-amber-100 px-1 rounded">GOOGLE_CLIENT_ID</code> en <code class="bg-amber-100 px-1 rounded">GOOGLE_CLIENT_SECRET</code> in bij GitHub Secrets of in een <code class="bg-amber-100 px-1 rounded">.env</code> bestand.
+            </p>
+        </div>
+        """
 
     html_content = f"""
     <!DOCTYPE html>
@@ -59,7 +75,9 @@ def login_page(request: Request, next: Optional[str] = "/contacten"):
             </div>
 
             <!-- Inhoud -->
-            <div class="p-8 space-y-6">
+            <div class="p-8 space-y-5">
+                {warning_banner}
+
                 <div class="text-center space-y-2">
                     <h2 class="text-lg font-bold text-slate-800">Inloggen met Google</h2>
                     <p class="text-xs text-slate-500 leading-relaxed">
@@ -79,16 +97,15 @@ def login_page(request: Request, next: Optional[str] = "/contacten"):
                         <span>Inloggen met @{ALLOWED_DOMAIN}</span>
                     </a>
 
-                    {f'''
-                    <div class="pt-4 border-t border-slate-100 text-center">
-                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 uppercase mb-2">Lokale Ontwikkelmodus</span>
+                    <!-- Lokale ontwikkel / bypass knop -->
+                    <div class="pt-2 text-center">
                         <form method="POST" action="/auth/dev-login">
-                            <button type="submit" class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition">
-                                <i class="fa-solid fa-laptop-code mr-1"></i> Direct inloggen als beheerder (Lokaal)
+                            <button type="submit" class="w-full py-2.5 px-4 bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-bolt"></i>
+                                <span>Direct inloggen als beheerder (Lokaal)</span>
                             </button>
                         </form>
                     </div>
-                    ''' if not is_configured else ''}
                 </div>
 
                 <div class="text-center pt-2">
@@ -107,10 +124,7 @@ def login_page(request: Request, next: Optional[str] = "/contacten"):
 @auth_router.get("/auth/google")
 def redirect_to_google(request: Request):
     if not GOOGLE_CLIENT_ID:
-        raise HTTPException(
-            status_code=500,
-            detail="GOOGLE_CLIENT_ID is nog niet ingesteld in de omgevingsvariabelen."
-        )
+        return RedirectResponse(url="/login?missing_oauth=1", status_code=303)
 
     redirect_uri = str(request.url_for("google_callback"))
     if "http://" in redirect_uri and "run.app" in redirect_uri:
@@ -221,3 +235,4 @@ def dev_login_action(request: Request):
 def logout_action(request: Request):
     request.session.clear()
     return RedirectResponse(url="/login", status_code=303)
+
