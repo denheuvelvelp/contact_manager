@@ -45,7 +45,14 @@ class GoogleWorkspaceManager:
                     subject=self.admin_email
                 )
             elif self.credentials_json:
-                info = json.loads(self.credentials_json)
+                raw = self.credentials_json.strip()
+                if not raw.startswith("{"):
+                    import base64
+                    try:
+                        raw = base64.b64decode(raw).decode("utf-8")
+                    except Exception as b64_err:
+                        logger.warning(f"Base64 decode fout: {b64_err}")
+                info = json.loads(raw)
                 creds = service_account.Credentials.from_service_account_info(
                     info,
                     scopes=SCOPES,
@@ -196,3 +203,4 @@ class GoogleWorkspaceManager:
 
 
 workspace_manager = GoogleWorkspaceManager()
+
