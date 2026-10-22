@@ -28,15 +28,41 @@ jobs:
           pip install -r apps/cooperatie/requirements.txt
           pip install pytest flake8
 
-      - name: Lint with flake8 (syntax errors & warnings)
+      - name: Lint with flake8
         run: |
-          # Stop build if there are Python syntax errors or undefined names
           flake8 apps/cooperatie --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Exit-zero treats all errors as warnings. 120 chars line length.
-          flake8 apps/cooperatie --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+          flake8 apps/cooperatie --count --exit-zero --max-complexity=10 --max-line-length=130 --statistics
 
-      - name: Run Pytest unittests
+      - name: Run Pytest
         run: |
-          cd apps/cooperatie
-          pytest -v
+          PYTHONPATH=. pytest apps/cooperatie/tests -v
 
+  test-vve:
+    name: Test VvE App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "apps/vve/requirements.txt"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/vve/requirements.txt
+          pip install pytest flake8
+
+      - name: Lint with flake8
+        run: |
+          flake8 apps/vve --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 apps/vve --count --exit-zero --max-complexity=10 --max-line-length=130 --statistics
+
+      - name: Run Pytest
+        run: |
+          PYTHONPATH=. pytest apps/vve/tests -v

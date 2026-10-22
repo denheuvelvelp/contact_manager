@@ -1,93 +1,58 @@
 # Huismeester Contactmanager
 
 Moderne, schaalbare cloud-contactmanager voor de huismeester van een appartementencomplex, opgebouwd in twee afzonderlijke applicaties:
-1. **Coöperatieve Vereniging:** Uitsluitend bewoners van de appartementen, inclusief 2 noodcontacten en calamiteitengegevens (minder mobiel/zorg).
-2. **Vereniging van Eigenaren (VvE):** Eigenaren, commerciële bedrijven en garagehouders (gepland in Fase 3).
+
+1. **Coöperatieve Vereniging (Port 8080):** Uitsluitend bewoners van de appartementen, inclusief 2 aparte noodcontacten en calamiteitengegevens (minder mobiel/zorg).
+2. **Vereniging van Eigenaren - VvE (Port 8081):** Vastgoedeigenaren, bedrijven (commerciële ruimtes), garageboxhouders, breukdelen/stemgewicht en externe correspondentieadressen.
 
 ---
 
-## Kernfunctionaliteiten (Fase 1: Coöperatieve Vereniging)
+## Kernfunctionaliteiten
 
-- **Wekelijkse Rebo CSV Import:**
-  - Ondersteunt exact de 11 kolommen van Rebo:
-    `Index nummer`, `Bestemming`, `Adres appartementsrecht`, `Naam`, `Postadres`, `Telefoonnummer`, `Telefoonnummer 2`, `Telefoonnummer 3`, `Email`, `Email 2`, `Email 3`.
-  - **100% Veilige Ontdubbeling:** Reeds bestaande bewoners worden **met rust gelaten** (niet overschreven). Alleen nieuwe bewoners worden toegevoegd.
-  - Ondersteunt zowel komma (`,`) als puntkomma (`;`, Nederlandse Excel) en UTF-8 / Windows-1252 encodings.
-- **Twee Noodcontacten per Bewoner:**
-  - Noodcontactpersoon 1 (Naam 1, Noodtelefoon 1, Nood-email 1)
-  - Noodcontactpersoon 2 (Naam 2, Noodtelefoon 2, Nood-email 2)
-- **Calamiteiten & Huismeesterfuncties:**
-  - Vlag voor *Minder mobiel / Zorgbehoevend* (voor hulpdiensten bij ontruiming/brandalarm).
-  - Intercom-naam, huisdieren, interne huismeesternotities.
-- **Cloud & Beveiliging:**
-  - **Google Cloud Run:** Volledig containerized via Docker.
-  - **Firebase Hosting:** Snelle en veilige webtoegang met SSL.
-  - **Google Cloud Firestore:** Schaalbare serverless NoSQL-database (met automatische SQLite-terugval voor direct lokaal testen).
-  - **GitHub Actions & Dependabot:** Automatische codecontroles en wekelijkse dependency-scans op beveiligingslekken.
+### 1. Wekelijkse Rebo CSV Import & Ontdubbeling
+- Ondersteunt exact de 11 kolommen van Rebo voor beide verenigingen:
+  `Index nummer`, `Bestemming`, `Adres appartementsrecht`, `Naam`, `Postadres`, `Telefoonnummer`, `Telefoonnummer 2`, `Telefoonnummer 3`, `Email`, `Email 2`, `Email 3`.
+- **100% Veilige Ontdubbeling:** Reeds bestaande eenheden worden **met rust gelaten** (niet overschreven). Alleen nieuwe eenheden worden toegevoegd. Handmatig verrijkte gegevens (zoals breukdelen, garages of noodcontacten) blijven altijd intact.
+- Ondersteunt komma (`,`), puntkomma (`;`, Nederlandse Excel) en UTF-8 / Windows-1252 encodings.
+
+### 2. VvE Specifieke Functies (Applicatie 2)
+- **Correspondentieadres Externe Eigenaren:** Automatische detectie wanneer een eigenaar elders woont (postadres wijkt af van appartementsrecht).
+- **Garagebox- & Parkeerplaatsnummers:** Beheer van gekoppelde garages (bijv. G-04, P-12).
+- **Breukdelen & Stemgewicht:** Duidelijk overzicht voor de ALV (bijv. 14/1000).
+- **Slimme Categorisatie:** Automatische herkenning van Woningeigenaren, Bedrijven / Commercieel en Garageboxhouders.
+
+### 3. Coöperatieve Functies (Applicatie 1)
+- Twee aparte noodcontacten (Naam 1 & 2, Noodtelefoon 1 & 2, Nood-email 1 & 2).
+- Vlag voor *Minder mobiel / Zorgbehoevend* (voor hulpdiensten bij ontruiming/brandalarm).
+- Huisdieren, intercomnaam, etage, interne huismeesternotities.
 
 ---
 
 ## Lokale Installatie & Testen
 
-### Optie A: Met Docker (Aanbevolen)
+### Coöperatieve Vereniging starten (Poort 8080):
 ```bash
-docker compose up --build
+./run_cooperatie.sh
 ```
-Open vervolgens in je browser: [http://localhost:8080](http://localhost:8080)
+Open in je browser: [http://10.13.20.161:8080](http://10.13.20.161:8080) (of localhost:8080)
 
-### Optie B: Met Python Virtual Environment
+### VvE Applicatie starten (Poort 8081):
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r apps/cooperatie/requirements.txt
-
-# Start de applicatie
-python3 -m uvicorn apps.cooperatie.main:app --port 8080 --reload
+./run_vve.sh
 ```
-Open vervolgens in je browser: [http://localhost:8080](http://localhost:8080)
+Open in je browser: [http://10.13.20.161:8081](http://10.13.20.161:8081) (of localhost:8081)
 
 ---
 
 ## Automatische Tests Uitvoeren
 ```bash
-pytest -v
+PYTHONPATH=. pytest -v
 ```
 
 ---
 
-## Deployment naar Google Cloud & Firebase (Fase 2)
+## Deployment naar Google Cloud & Firebase
 
-Zie voor de complete stap-voor-stap handleiding: [DEPLOYMENT.md](DEPLOYMENT.md).
-
-De GitHub Actions pipeline ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) bouwt en publiceert de applicatie automatisch bij elke push naar `main`:
-1. Voert alle unittests uit.
-2. Bouwt de Docker container en pusht naar **Google Artifact Registry** (`europe-west4`).
-3. Rolt uit naar **Google Cloud Run** (`cooperatie-service`).
-4. Configureert **Firebase Hosting** met automatische SSL-certificaten en CDN-caching.
-5. Slaat gegevens op in **Google Cloud Firestore**.
-
----
-
-## Structuur Monorepo
-
-```
-.
-├── .github/
-│   ├── dependabot.yml       # Automatische Dependabot security updates
-│   └── workflows/
-│       └── ci.yml           # GitHub Actions CI (linting, syntax en tests)
-├── apps/
-│   ├── cooperatie/          # Applicatie 1: Coöperatieve Vereniging
-│   │   ├── Dockerfile
-│   │   ├── main.py          # FastAPI webapplicatie & API endpoints
-│   │   ├── importer.py      # Slimme Rebo CSV-importeur met ontdubbeling
-│   │   ├── models.py        # Datamodellen (Rebo kolommen + 2x noodcontacten)
-│   │   ├── database.py      # Cloud Firestore + SQLite fallback
-│   │   ├── templates/       # HTML5 Jinja2 interfaces (Tailwind CSS)
-│   │   └── sample_rebo_cooperatie.csv # Testbestand met jouw Rebo kolommen
-│   └── vve/                 # Applicatie 2: VvE (Fase 3)
-├── shared/                  # Gedeelde logica
-├── docker-compose.yml
-└── README.md
-```
-
+De GitHub Actions pipeline ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) bouwt en publiceert beide applicaties automatisch bij elke push naar `main`:
+- `cooperatie-service` op Google Cloud Run (gekoppeld aan Firestore collectie `cooperatie_contacten`)
+- `vve-service` op Google Cloud Run (gekoppeld aan Firestore collectie `vve_contacten`)

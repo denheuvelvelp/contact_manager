@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}{% if contact %}VvE Lid Bewerken: {{ contact.naam }}{% else %}Nieuw VvE Lid Toevoegen{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Terugknop & Kop -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <a href="/contacten" class="p-2 text-slate-500 hover:text-slate-800 bg-white rounded-lg border border-slate-200 transition">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-xl font-bold text-slate-900">
+                    {% if contact %}VvE Lid: {{ contact.naam }}{% else %}Nieuw VvE Lid / Eigenaar{% endif %}
+                </h1>
+                <p class="text-xs text-slate-500">Vereniging van Eigenaren administratie</p>
+            </div>
+        </div>
+
+        {% if contact %}
+        <form method="POST" action="/contacten/{{ contact.id }}/verwijderen" onsubmit="return confirm('Weet je zeker dat je VvE-lid {{ contact.naam }} (Index: {{ contact.index_nummer }}) wilt verwijderen?');">
+            <button type="submit" class="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 rounded-lg text-xs font-semibold transition">
+                <i class="fa-solid fa-trash-can mr-1"></i> Verwijderen
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Formulier -->
+    <form method="POST" action="{% if contact %}/contacten/{{ contact.id }}{% else %}/contacten/nieuw{% endif %}" class="space-y-6">
+
+        <!-- Sectie 1: Appartementsrecht, Type & Breukdeel -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center text-vve-800 border-b border-slate-100 pb-2">
+                <i class="fa-solid fa-building mr-2"></i> 1. Appartementsrecht, Type &amp; Breukdeel
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Index nummer *</label>
+                    <input 
+                        type="text" 
+                        name="index_nummer" 
+                        required 
+                        value="{{ contact.index_nummer if contact else '' }}" 
+                        placeholder="bijv. 101, B-01, G-12" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Type Lid</label>
+                    <select name="type_lid" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-vve-500 focus:outline-none">
+                        <option value="Woningeigenaar" {% if contact and contact.type_lid == 'Woningeigenaar' %}selected{% endif %}>Woningeigenaar</option>
+                        <option value="Bedrijf / Commercieel" {% if contact and contact.type_lid == 'Bedrijf / Commercieel' %}selected{% endif %}>Bedrijf / Commercieel (Plint)</option>
+                        <option value="Garageboxhouder" {% if contact and contact.type_lid == 'Garageboxhouder' %}selected{% endif %}>Garageboxhouder</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Bestemming (Rebo)</label>
+                    <input 
+                        type="text" 
+                        name="bestemming" 
+                        value="{{ contact.bestemming if contact else 'Woning' }}" 
+                        placeholder="Woning, Bedrijf, Garage" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                    />
+                </div>
+
+                <div class="sm:col-span-3">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Adres appartementsrecht *</label>
+                    <input 
+                        type="text" 
+                        name="adres_appartementsrecht" 
+                        required 
+                        value="{{ contact.adres_appartementsrecht if contact else '' }}" 
+                        placeholder="bijv. Molenwerf 12-A of Molenwerf G-04" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                    />
+                </div>
+
+                <!-- Breukdeel & Garageboxnummers (Jouw wens!) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">
+                        <i class="fa-solid fa-chart-pie mr-1 text-vve-600"></i> Breukdeel / Stemgewicht
+                    </label>
+                    <input 
+                        type="text" 
+                        name="breukdeel" 
+                        value="{{ contact.breukdeel if contact else '' }}" 
+                        placeholder="bijv. 14/1000 of 1 stem" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                    />
+                    <p class="text-[11px] text-slate-400 mt-0.5">Voor ALV en stemmingen</p>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">
+                        <i class="fa-solid fa-square-parking mr-1 text-emerald-600"></i> Garagebox- &amp; Parkeerplaatsnummers
+                    </label>
+                    <input 
+                        type="text" 
+                        name="garageboxnummers" 
+                        value="{{ contact.garageboxnummers if contact else '' }}" 
+                        placeholder="bijv. Garagebox G-12, Parkeerplek P-04" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- Sectie 2: Eigenaar & Zakelijke Gegevens -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center text-vve-800 border-b border-slate-100 pb-2">
+                <i class="fa-solid fa-user-tie mr-2"></i> 2. Eigenaar / Zakelijke Gegevens
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Naam eigenaar / organisatie *</label>
+                    <input 
+                        type="text" 
+                        name="naam" 
+                        required 
+                        value="{{ contact.naam if contact else '' }}" 
+                        placeholder="bijv. J. Jansen of Beleggingen B.V." 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Bedrijfsnaam (indien commercieel)</label>
+                    <input 
+                        type="text" 
+                        name="bedrijfsnaam" 
+                        value="{{ contact.bedrijfsnaam if contact else '' }}" 
+                        placeholder="bijv. Fysiotherapie De Molen" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                    />
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Contactpersoon (bij bedrijf of beheerder)</label>
+                    <input 
+                        type="text" 
+                        name="contactpersoon_zakelijk" 
+                        value="{{ contact.contactpersoon_zakelijk if contact else '' }}" 
+                        placeholder="bijv. Dhr. M. van Dam (Vastgoedbeheerder)" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                    />
+                </div>
+
+                <!-- Telefoons -->
+                <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Telefoonnummer (Primair)</label>
+                        <input 
+                            type="tel" 
+                            name="telefoonnummer" 
+                            value="{{ contact.telefoonnummer if contact else '' }}" 
+                            placeholder="06-12345678" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Telefoonnummer 2 (Extra)</label>
+                        <input 
+                            type="tel" 
+                            name="telefoonnummer_2" 
+                            value="{{ contact.telefoonnummer_2 if contact else '' }}" 
+                            placeholder="020-6223344" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Telefoonnummer 3 (Extra)</label>
+                        <input 
+                            type="tel" 
+                            name="telefoonnummer_3" 
+                            value="{{ contact.telefoonnummer_3 if contact else '' }}" 
+                            placeholder="06-88776655" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                        />
+                    </div>
+                </div>
+
+                <!-- Emails -->
+                <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail (Primair)</label>
+                        <input 
+                            type="email" 
+                            name="email" 
+                            value="{{ contact.email if contact else '' }}" 
+                            placeholder="eigenaar@example.com" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail 2 (Extra)</label>
+                        <input 
+                            type="email" 
+                            name="email_2" 
+                            value="{{ contact.email_2 if contact else '' }}" 
+                            placeholder="administratie@example.com" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail 3 (Extra)</label>
+                        <input 
+                            type="email" 
+                            name="email_3" 
+                            value="{{ contact.email_3 if contact else '' }}" 
+                            placeholder="beheer@example.com" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sectie 3: Adres & Correspondentie (Externe eigenaren - Jouw wens!) -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-amber-700 uppercase tracking-wider flex items-center border-b border-amber-100 pb-2">
+                <i class="fa-solid fa-envelope-open-text mr-2"></i> 3. Adres &amp; Correspondentie (Externe Eigenaren)
+            </h2>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Postadres eenheid (Rebo)</label>
+                    <input 
+                        type="text" 
+                        name="postadres" 
+                        value="{{ contact.postadres if contact else '' }}" 
+                        placeholder="Adres inclusief postcode en plaats" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                    />
+                </div>
+
+                <!-- Extern wonend vlag -->
+                <div class="p-4 bg-amber-50 rounded-lg border border-amber-200 flex items-start space-x-3">
+                    <input 
+                        type="checkbox" 
+                        id="is_externe_eigenaar" 
+                        name="is_externe_eigenaar" 
+                        value="1" 
+                        {% if contact and contact.is_externe_eigenaar %}checked{% endif %}
+                        class="mt-1 h-5 w-5 text-amber-600 rounded border-slate-300 focus:ring-amber-500"
+                    />
+                    <label for="is_externe_eigenaar" class="text-sm">
+                        <span class="font-bold text-amber-900 block flex items-center">
+                            <i class="fa-solid fa-location-arrow mr-1.5"></i> Eigenaar woont elders (externe eigenaar / verhuurder)
+                        </span>
+                        <span class="text-xs text-amber-800">
+                            Aanvinken als deze eigenaar niet zelf in het appartement woont. Officiële post en facturen gaan naar het externe correspondentieadres.
+                        </span>
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Correspondentieadres Externe Eigenaar</label>
+                    <input 
+                        type="text" 
+                        name="correspondentieadres_extern" 
+                        value="{{ contact.correspondentieadres_extern if contact else '' }}" 
+                        placeholder="bijv. Keizersgracht 400, 1016 EK Amsterdam" 
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+                    />
+                    <p class="text-[11px] text-slate-400 mt-0.5">Hiernaartoe worden VvE-brieven, ALV-stukken en bijdragen gestuurd</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sectie 4: Noodcontactpersonen & Sleutelhouders -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center text-vve-800 border-b border-slate-100 pb-2">
+                <i class="fa-solid fa-key mr-2"></i> 4. Noodcontactpersonen / Sleutelhouders
+            </h2>
+            <p class="text-xs text-slate-500">
+                Contactpersonen bij calamiteiten in het gebouw, lekkages of sleutelbeheer van de bedrijfsruimtes of garages.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
+                <!-- Noodcontact 1 -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <span class="font-bold text-xs uppercase text-slate-700 block">Noodcontactpersoon 1</span>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Naam</label>
+                        <input type="text" name="noodcontact_1_naam" value="{{ contact.noodcontact_1_naam if contact else '' }}" placeholder="Naam contactpersoon" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Telefoon</label>
+                        <input type="tel" name="noodcontact_1_telefoon" value="{{ contact.noodcontact_1_telefoon if contact else '' }}" placeholder="06-..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-mono" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail</label>
+                        <input type="email" name="noodcontact_1_email" value="{{ contact.noodcontact_1_email if contact else '' }}" placeholder="nood@..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm" />
+                    </div>
+                </div>
+
+                <!-- Noodcontact 2 -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <span class="font-bold text-xs uppercase text-slate-700 block">Noodcontactpersoon 2</span>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Naam</label>
+                        <input type="text" name="noodcontact_2_naam" value="{{ contact.noodcontact_2_naam if contact else '' }}" placeholder="Naam contactpersoon" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Telefoon</label>
+                        <input type="tel" name="noodcontact_2_telefoon" value="{{ contact.noodcontact_2_telefoon if contact else '' }}" placeholder="06-..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-mono" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail</label>
+                        <input type="email" name="noodcontact_2_email" value="{{ contact.noodcontact_2_email if contact else '' }}" placeholder="nood@..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sectie 5: Notities VvE Bestuur -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-2">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center text-vve-800 border-b border-slate-100 pb-2">
+                <i class="fa-solid fa-clipboard mr-2"></i> 5. Notities VvE Bestuur &amp; Huismeester
+            </h2>
+            <textarea 
+                name="notities" 
+                rows="3" 
+                placeholder="Bijzonderheden over VvE-bijdrage, sleuteloverdracht, verhuur of garageafspraken..." 
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-vve-500 focus:outline-none"
+            >{{ contact.notities if contact else '' }}</textarea>
+        </div>
+
+        <!-- Knoppen -->
+        <div class="flex items-center justify-end space-x-3 pt-2">
+            <a href="/contacten" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition">
+                Annuleren
+            </a>
+            <button type="submit" class="px-6 py-2.5 bg-vve-800 hover:bg-vve-700 text-white rounded-lg text-sm font-bold shadow-md transition flex items-center space-x-2">
+                <i class="fa-solid fa-check"></i>
+                <span>{% if contact %}VvE-Lid Opslaan{% else %}VvE-Lid Toevoegen{% endif %}</span>
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

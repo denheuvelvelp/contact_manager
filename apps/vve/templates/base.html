@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="nl" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Vereniging van Eigenaren (VvE) - Contactbeheer{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        vve: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased">
+
+    <!-- Top Navigatiebar VvE -->
+    <header class="bg-vve-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Titel -->
+                <div class="flex items-center space-x-3">
+                    <span class="p-2 bg-vve-800 rounded-lg text-blue-200">
+                        <i class="fa-solid fa-city text-xl"></i>
+                    </span>
+                    <div>
+                        <a href="/contacten" class="font-bold text-lg tracking-tight hover:text-blue-100 transition">
+                            VvE Beheer Portaal
+                        </a>
+                        <span class="hidden sm:inline-block ml-2 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-950 text-blue-200 border border-blue-700">
+                            Eigenaren &bull; Bedrijven &bull; Garages
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Navigatie Links -->
+                <nav class="flex items-center space-x-2 sm:space-x-4">
+                    <a href="/contacten" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-vve-800 transition flex items-center space-x-1">
+                        <i class="fa-solid fa-users-gear"></i>
+                        <span>Leden &amp; Eigenaren</span>
+                    </a>
+                    <a href="/importeren" class="px-3 py-2 rounded-md text-sm font-medium bg-vve-700 hover:bg-vve-600 transition flex items-center space-x-1 shadow-sm">
+                        <i class="fa-solid fa-file-csv"></i>
+                        <span>CSV Importeren</span>
+                    </a>
+                    <a href="/contacten/nieuw" class="px-3 py-2 rounded-md text-sm font-medium bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold transition flex items-center space-x-1 shadow-sm">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span class="hidden md:inline">Nieuw Lid</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hoofdinhoud -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
+            <div>
+                <strong>Vereniging van Eigenaren (VvE) Contactbeheer</strong> &bull; Fase 3 (Eigenaren, Bedrijven, Garages)
+            </div>
+            <div class="flex items-center space-x-4">
+                <span><i class="fa-solid fa-shield-halved text-vve-600 mr-1"></i>Bestaande contacten beschermd</span>
+                <span><i class="fa-solid fa-chart-pie text-slate-400 mr-1"></i>Breukdelen &amp; Garages</span>
+            </div>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

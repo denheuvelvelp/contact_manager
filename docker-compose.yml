@@ -17,3 +17,18 @@ services:
       - ./apps/cooperatie:/app/apps/cooperatie
     restart: unless-stopped
 
+  vve-app:
+    build:
+      context: .
+      dockerfile: apps/vve/Dockerfile
+    container_name: vve_contact_manager
+    ports:
+      - "8081:8080"
+    environment:
+      - PORT=8080
+      - USE_FIRESTORE=false
+      - SQLITE_DB_PATH=/app/local_data/vve_contacts.db
+    volumes:
+      - ./local_data:/app/local_data
+      - ./apps/vve:/app/apps/vve
+    restart: unless-stopped

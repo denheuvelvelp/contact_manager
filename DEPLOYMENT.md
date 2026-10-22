@@ -94,3 +94,4 @@ Zodra de secrets zijn toegevoegd:
 * **Schaalt naar 0:** Als niemand de website gebruikt, staan er 0 containers aan (min-instances=0). Hierdoor vallen de kosten binnen de royale maandelijkse gratis bundels van Google Cloud.
 * **Geen vaste servers:** Cloud Firestore en Cloud Run zijn 100% serverless.
 * **Dependabot:** Scant wekelijks automatisch of er updates nodig zijn om kwetsbaarheden te voorkomen.
+

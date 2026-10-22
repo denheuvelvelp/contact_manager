@@ -3,11 +3,11 @@ name: CD - Deploy naar Google Cloud & Firebase
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Maakt handmatig triggeren in GitHub mogelijk
+  workflow_dispatch:
 
 jobs:
   test:
-    name: Run Unit Tests
+    name: Run All Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -24,6 +24,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r apps/cooperatie/requirements.txt
+          pip install -r apps/vve/requirements.txt
           pip install pytest
 
       - name: Run Pytest
@@ -38,7 +39,6 @@ jobs:
 
     env:
       REGION: europe-west4
-      SERVICE_NAME: cooperatie-service
       REPOSITORY_NAME: contact-manager
 
     steps:
@@ -58,23 +58,24 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
-      - name: Bouw en tag Docker Image
+      # --- 1. Bouw en Deploy Coöperatieve App ---
+      - name: Bouw Coöperatieve Container Image
         run: |
-          IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/cooperatie-app:${{ github.sha }}"
-          LATEST_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/cooperatie-app:latest"
+          IMAGE_COOP="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/cooperatie-app:${{ github.sha }}"
+          LATEST_COOP="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/cooperatie-app:latest"
           
-          docker build -t "$IMAGE_TAG" -t "$LATEST_TAG" -f apps/cooperatie/Dockerfile .
-          docker push "$IMAGE_TAG"
-          docker push "$LATEST_TAG"
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          docker build -t "$IMAGE_COOP" -t "$LATEST_COOP" -f apps/cooperatie/Dockerfile .
+          docker push "$IMAGE_COOP"
+          docker push "$LATEST_COOP"
+          echo "IMAGE_COOP=$IMAGE_COOP" >> $GITHUB_ENV
 
-      - name: Deploy naar Google Cloud Run
-        id: deploy-run
+      - name: Deploy Coöperatieve Service naar Cloud Run
+        id: deploy-coop
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: ${{ env.SERVICE_NAME }}
+          service: cooperatie-service
           region: ${{ env.REGION }}
-          image: ${{ env.IMAGE_TAG }}
+          image: ${{ env.IMAGE_COOP }}
           flags: >-
             --allow-unauthenticated
             --min-instances=0
@@ -83,15 +84,47 @@ jobs:
             --cpu=1
             --set-env-vars=USE_FIRESTORE=true,FIRESTORE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},FIRESTORE_COLLECTION=cooperatie_contacten
 
-      - name: Installeer Firebase CLI
-        run: npm install -g firebase-tools
+      # --- 2. Bouw en Deploy VvE App ---
+      - name: Bouw VvE Container Image
+        run: |
+          IMAGE_VVE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/vve-app:${{ github.sha }}"
+          LATEST_VVE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/vve-app:latest"
+          
+          docker build -t "$IMAGE_VVE" -t "$LATEST_VVE" -f apps/vve/Dockerfile .
+          docker push "$IMAGE_VVE"
+          docker push "$LATEST_VVE"
+          echo "IMAGE_VVE=$IMAGE_VVE" >> $GITHUB_ENV
 
+      - name: Deploy VvE Service naar Cloud Run
+        id: deploy-vve
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: vve-service
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE_VVE }}
+          flags: >-
+            --allow-unauthenticated
+            --min-instances=0
+            --max-instances=2
+            --memory=512Mi
+            --cpu=1
+            --set-env-vars=USE_FIRESTORE=true,FIRESTORE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},FIRESTORE_COLLECTION=vve_contacten
+
+      - name: Deployment URLs Overzicht
+        run: |
+          echo "=========================================================="
+          echo " Coöperatieve App URL: ${{ steps.deploy-coop.outputs.url }}"
+          echo " VvE App URL:          ${{ steps.deploy-vve.outputs.url }}"
+          echo "=========================================================="
+
+      # --- 3. Firebase Hosting (Optioneel) ---
       - name: Deploy Firebase Hosting
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
           if [ -n "$FIREBASE_TOKEN" ]; then
+            npm install -g firebase-tools
             firebase deploy --only hosting --project ${{ secrets.GCP_PROJECT_ID }} --token "$FIREBASE_TOKEN"
           else
-            echo "FIREBASE_TOKEN niet ingesteld; hosting overgeslagen (Cloud Run service is direct live via: ${{ steps.deploy-run.outputs.url }})"
+            echo "FIREBASE_TOKEN niet ingesteld; hosting overgeslagen. Cloud Run services zijn direct bereikbaar via de bovenstaande URLs."
           fi

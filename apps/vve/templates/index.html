@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}VvE Ledenoverzicht - Eigenaren, Bedrijven & Garages{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Reset Melding Banner (indien zojuist gereset) -->
+    {% if was_reset %}
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between text-blue-900 shadow-sm">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-circle-check text-blue-600 text-lg"></i>
+            <div>
+                <p class="font-bold text-sm">VvE-database succesvol gereset</p>
+                <p class="text-xs text-blue-700">Alle VvE-contacten zijn gewist. Je kunt nu met een schone lei beginnen.</p>
+            </div>
+        </div>
+        <a href="/contacten" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">&times; Sluiten</a>
+    </div>
+    {% endif %}
+
+    <!-- KPI / Teller Banner VvE -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Totaal Eenheden</p>
+            <p class="text-2xl font-bold text-slate-800 mt-1">{{ total_count }}</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p class="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">Woningen</p>
+            <p class="text-2xl font-bold text-blue-800 mt-1">{{ woning_count }}</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p class="text-[11px] font-semibold text-purple-600 uppercase tracking-wider">Bedrijven / Commercieel</p>
+            <p class="text-2xl font-bold text-purple-800 mt-1">{{ bedrijf_count }}</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Garageboxen</p>
+            <p class="text-2xl font-bold text-emerald-800 mt-1">{{ garage_count }}</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm col-span-2 sm:col-span-1">
+            <p class="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">Externe Eigenaren</p>
+            <p class="text-2xl font-bold text-amber-800 mt-1">{{ extern_count }}</p>
+        </div>
+    </div>
+
+    <!-- Zoekbalk & Filters -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+        <form method="GET" action="/contacten" class="flex-1 w-full flex gap-2">
+            <div class="relative flex-1">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input 
+                    type="text" 
+                    name="q" 
+                    value="{{ search_query or '' }}" 
+                    placeholder="Zoek op index, eigenaar, bedrijf, adres, garage, breukdeel of extern adres..." 
+                    class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vve-500 focus:border-vve-500"
+                />
+            </div>
+            {% if selected_type %}
+            <input type="hidden" name="type" value="{{ selected_type }}" />
+            {% endif %}
+            {% if externe_only %}
+            <input type="hidden" name="extern" value="1" />
+            {% endif %}
+            <button type="submit" class="px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition">
+                Zoeken
+            </button>
+            {% if search_query %}
+            <a href="/contacten" class="px-3 py-2 bg-slate-100 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-200 transition flex items-center">
+                Wissen
+            </a>
+            {% endif %}
+        </form>
+
+        <!-- Quick filter switches & Reset Knop -->
+        <div class="flex items-center space-x-1.5 w-full md:w-auto justify-end overflow-x-auto pb-1 md:pb-0">
+            <a 
+                href="/contacten{% if search_query %}?q={{ search_query }}{% endif %}" 
+                class="px-2.5 py-1.5 text-xs font-semibold rounded-lg transition border whitespace-nowrap {% if not selected_type and not externe_only %}bg-vve-800 text-white border-vve-800{% else %}bg-white text-slate-600 border-slate-200 hover:bg-slate-50{% endif %}">
+                Alles
+            </a>
+            <a 
+                href="/contacten?type=Woningeigenaar{% if search_query %}&q={{ search_query }}{% endif %}" 
+                class="px-2.5 py-1.5 text-xs font-semibold rounded-lg transition border whitespace-nowrap {% if selected_type == 'Woningeigenaar' %}bg-blue-600 text-white border-blue-600{% else %}bg-white text-blue-700 border-blue-200 hover:bg-blue-50{% endif %}">
+                Woningen
+            </a>
+            <a 
+                href="/contacten?type=Bedrijf%20%2F%20Commercieel{% if search_query %}&q={{ search_query }}{% endif %}" 
+                class="px-2.5 py-1.5 text-xs font-semibold rounded-lg transition border whitespace-nowrap {% if selected_type == 'Bedrijf / Commercieel' %}bg-purple-600 text-white border-purple-600{% else %}bg-white text-purple-700 border-purple-200 hover:bg-purple-50{% endif %}">
+                Bedrijven
+            </a>
+            <a 
+                href="/contacten?type=Garageboxhouder{% if search_query %}&q={{ search_query }}{% endif %}" 
+                class="px-2.5 py-1.5 text-xs font-semibold rounded-lg transition border whitespace-nowrap {% if selected_type == 'Garageboxhouder' %}bg-emerald-600 text-white border-emerald-600{% else %}bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50{% endif %}">
+                Garages
+            </a>
+            <a 
+                href="/contacten?extern=1{% if search_query %}&q={{ search_query }}{% endif %}" 
+                class="px-2.5 py-1.5 text-xs font-semibold rounded-lg transition border whitespace-nowrap flex items-center space-x-1 {% if externe_only %}bg-amber-600 text-white border-amber-600{% else %}bg-white text-amber-700 border-amber-200 hover:bg-amber-50{% endif %}">
+                <i class="fa-solid fa-location-arrow"></i>
+                <span>Extern</span>
+            </a>
+
+            <!-- Resetknop -->
+            <form method="POST" action="/contacten/reset" onsubmit="return confirm('WAARSCHUWING:\n\nWeet je 100% zeker dat je ALLE VvE-contacten wilt wissen om weer vanaf nul te beginnen?');" class="inline">
+                <button type="submit" title="Wis alle VvE contacten en begin vanaf nul" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-semibold transition flex items-center space-x-1 whitespace-nowrap">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Reset</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contactenlijst Tabel VvE -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        {% if contacts %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+                <thead class="bg-slate-50 text-slate-600 uppercase text-xs tracking-wider">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">Index</th>
+                        <th class="px-4 py-3 font-semibold">Type &amp; Adres</th>
+                        <th class="px-4 py-3 font-semibold">Eigenaar / Bedrijf</th>
+                        <th class="px-4 py-3 font-semibold">Breukdeel &amp; Garages</th>
+                        <th class="px-4 py-3 font-semibold">Contactgegevens</th>
+                        <th class="px-4 py-3 font-semibold">Correspondentie</th>
+                        <th class="px-4 py-3 font-semibold text-right">Acties</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for c in contacts %}
+                    <tr class="hover:bg-slate-50/70 transition">
+                        <!-- Index -->
+                        <td class="px-4 py-3 whitespace-nowrap font-bold text-slate-900">
+                            <span class="inline-block px-2.5 py-1 rounded bg-slate-100 border border-slate-200 text-xs font-mono">
+                                {{ c.index_nummer }}
+                            </span>
+                        </td>
+
+                        <!-- Type & Adres -->
+                        <td class="px-4 py-3">
+                            <div class="font-medium text-slate-900">{{ c.adres_appartementsrecht }}</div>
+                            <div class="mt-0.5">
+                                {% if c.type_lid == 'Bedrijf / Commercieel' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                    <i class="fa-solid fa-briefcase mr-1"></i> Bedrijf
+                                </span>
+                                {% elif c.type_lid == 'Garageboxhouder' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    <i class="fa-solid fa-warehouse mr-1"></i> Garage
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                    <i class="fa-solid fa-house mr-1"></i> Woning
+                                </span>
+                                {% endif %}
+                                <span class="text-xs text-slate-400 ml-1">{{ c.bestemming }}</span>
+                            </div>
+                        </td>
+
+                        <!-- Eigenaar / Bedrijfsnaam -->
+                        <td class="px-4 py-3">
+                            <div class="font-semibold text-slate-900">{{ c.naam }}</div>
+                            {% if c.bedrijfsnaam and c.bedrijfsnaam != c.naam %}
+                            <div class="text-xs font-medium text-purple-700">
+                                <i class="fa-solid fa-building mr-1"></i>{{ c.bedrijfsnaam }}
+                            </div>
+                            {% endif %}
+                            {% if c.contactpersoon_zakelijk %}
+                            <div class="text-xs text-slate-500">Contact: {{ c.contactpersoon_zakelijk }}</div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Breukdeel & Garageboxnummers -->
+                        <td class="px-4 py-3 text-xs space-y-1">
+                            {% if c.breukdeel %}
+                            <div class="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 font-mono font-bold">
+                                <i class="fa-solid fa-chart-pie mr-1 text-slate-400"></i> {{ c.breukdeel }}
+                            </div>
+                            {% endif %}
+                            {% if c.garageboxnummers %}
+                            <div class="text-xs font-semibold text-emerald-800">
+                                <i class="fa-solid fa-square-parking mr-1 text-emerald-600"></i>{{ c.garageboxnummers }}
+                            </div>
+                            {% endif %}
+                            {% if not c.breukdeel and not c.garageboxnummers %}
+                            <span class="text-slate-300 italic">&mdash;</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Contactgegevens (Regulier) -->
+                        <td class="px-4 py-3 text-xs space-y-0.5">
+                            {% if c.telefoonnummer %}
+                            <div class="flex items-center space-x-1.5 text-slate-800">
+                                <i class="fa-solid fa-phone text-slate-400 w-3"></i>
+                                <a href="tel:{{ c.telefoonnummer }}" class="hover:underline font-mono">{{ c.telefoonnummer }}</a>
+                            </div>
+                            {% endif %}
+                            {% if c.telefoonnummer_2 %}
+                            <div class="flex items-center space-x-1.5 text-slate-600 text-[11px]">
+                                <i class="fa-solid fa-phone text-slate-300 w-3"></i>
+                                <a href="tel:{{ c.telefoonnummer_2 }}" class="hover:underline font-mono">{{ c.telefoonnummer_2 }}</a>
+                            </div>
+                            {% endif %}
+                            {% if c.email %}
+                            <div class="flex items-center space-x-1.5 text-slate-700 truncate max-w-xs">
+                                <i class="fa-solid fa-envelope text-slate-400 w-3"></i>
+                                <a href="mailto:{{ c.email }}" class="hover:underline">{{ c.email }}</a>
+                            </div>
+                            {% endif %}
+                            {% if not c.telefoonnummer and not c.email %}
+                            <span class="text-slate-400 italic">Geen contactinfo</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Correspondentieadres (Extern) -->
+                        <td class="px-4 py-3 text-xs">
+                            {% if c.is_externe_eigenaar or c.correspondentieadres_extern %}
+                            <div class="p-2 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 max-w-xs">
+                                <span class="font-bold text-[10px] uppercase text-amber-700 flex items-center mb-0.5">
+                                    <i class="fa-solid fa-location-dot mr-1"></i> Elders wonend
+                                </span>
+                                <div class="text-[11px] leading-tight">
+                                    {{ c.correspondentieadres_extern or c.postadres or 'Adres extern onbekend' }}
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="text-slate-400 text-xs">Woont in complex</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Acties -->
+                        <td class="px-4 py-3 whitespace-nowrap text-right text-sm">
+                            <a href="/contacten/{{ c.id }}" class="inline-flex items-center px-2.5 py-1.5 bg-vve-50 hover:bg-vve-100 text-vve-700 rounded-md text-xs font-medium transition">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i> Bewerken
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 text-2xl mb-3">
+                <i class="fa-solid fa-city"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-700">Geen VvE-leden gevonden</h3>
+            <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                {% if search_query %}
+                Geen resultaten voor zoekopdracht "{{ search_query }}".
+                {% else %}
+                Er staan nog geen gegevens in de VvE database. Upload het Rebo VvE-bestand of voeg handmatig een lid toe.
+                {% endif %}
+            </p>
+            <div class="mt-6 flex justify-center gap-3">
+                <a href="/importeren" class="px-4 py-2 bg-vve-700 text-white rounded-lg text-sm font-medium hover:bg-vve-600 transition shadow-sm">
+                    <i class="fa-solid fa-file-csv mr-1.5"></i> Rebo VvE CSV Importeren
+                </a>
+                <a href="/contacten/nieuw" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-plus mr-1.5"></i> Handmatig Toevoegen
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
