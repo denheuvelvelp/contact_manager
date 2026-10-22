@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from apps.cooperatie.main import app
 from apps.cooperatie.config import settings
+from apps.cooperatie import auth
 
 
 @pytest.fixture(autouse=True)
@@ -13,11 +14,14 @@ def setup_test_db(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def client():
-    c = TestClient(app)
-    # Log in als geautoriseerde gebruiker van denheuvelvelp.nl
-    c.post("/auth/dev-login")
-    return c
+def client(monkeypatch):
+    # Simuleer een geverifieerde @denheuvelvelp.nl gebruiker voor testcases
+    monkeypatch.setattr(
+        auth,
+        "get_current_user",
+        lambda req: {"email": "huismeester@denheuvelvelp.nl", "name": "Huismeester"}
+    )
+    return TestClient(app)
 
 
 def test_health_check(client):
@@ -27,7 +31,7 @@ def test_health_check(client):
 
 
 def test_auth_redirect_when_not_logged_in():
-    # Nieuwe ongeauthenticeerde client
+    # Nieuwe ongeauthenticeerde client zonder sessie
     unauthed = TestClient(app)
     res = unauthed.get("/contacten", follow_redirects=False)
     assert res.status_code == 303

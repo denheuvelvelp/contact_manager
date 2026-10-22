@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from apps.vve.main import app
 from apps.vve.config import settings
+from apps.vve import auth
 
 
 @pytest.fixture(autouse=True)
@@ -13,10 +14,14 @@ def setup_test_db(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def client():
-    c = TestClient(app)
-    c.post("/auth/dev-login")
-    return c
+def client(monkeypatch):
+    # Simuleer een geverifieerde @denheuvelvelp.nl gebruiker voor testcases
+    monkeypatch.setattr(
+        auth,
+        "get_current_user",
+        lambda req: {"email": "huismeester@denheuvelvelp.nl", "name": "Huismeester"}
+    )
+    return TestClient(app)
 
 
 def test_vve_health_check(client):

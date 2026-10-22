@@ -9,7 +9,7 @@ from .config import settings
 from .database import get_vve_db
 from .models import VveContactCreate, VveContactUpdate
 from .importer import import_vve_csv
-from .auth import auth_router, get_current_user, SESSION_SECRET_KEY
+from . import auth
 
 app = FastAPI(
     title=settings.app_name,
@@ -31,7 +31,7 @@ async def auth_guard_middleware(request: Request, call_next):
     if path == "/" or any(path.startswith(p) for p in public_paths):
         return await call_next(request)
 
-    user = get_current_user(request)
+    user = auth.get_current_user(request)
     if not user:
         return RedirectResponse(url=f"/login?next={path}", status_code=303)
 
@@ -39,8 +39,8 @@ async def auth_guard_middleware(request: Request, call_next):
 
 
 # Sessie-middleware wordt als laatste toegevoegd zodat request.session beschikbaar is in auth_guard_middleware
-app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
-app.include_router(auth_router)
+app.add_middleware(SessionMiddleware, secret_key=auth.SESSION_SECRET_KEY)
+app.include_router(auth.auth_router)
 
 
 @app.get("/health")
@@ -76,7 +76,7 @@ def list_vve_contacts(
         request=request,
         name="index.html",
         context={
-            "user": get_current_user(request),
+            "user": auth.get_current_user(request),
             "contacts": contacts,
             "search_query": q,
             "selected_type": type,
@@ -103,7 +103,7 @@ def new_vve_contact_form(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="contact_form.html",
-        context={"user": get_current_user(request), "contact": None}
+        context={"user": auth.get_current_user(request), "contact": None}
     )
 
 
@@ -182,7 +182,7 @@ def get_vve_contact_detail(request: Request, contact_id: str):
     return templates.TemplateResponse(
         request=request,
         name="contact_form.html",
-        context={"user": get_current_user(request), "contact": contact}
+        context={"user": auth.get_current_user(request), "contact": contact}
     )
 
 
@@ -262,7 +262,7 @@ def import_vve_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="import.html",
-        context={"user": get_current_user(request), "results": None}
+        context={"user": auth.get_current_user(request), "results": None}
     )
 
 
@@ -274,7 +274,7 @@ async def handle_vve_csv_upload(request: Request, file: UploadFile = File(...)):
     return templates.TemplateResponse(
         request=request,
         name="import.html",
-        context={"user": get_current_user(request), "results": results}
+        context={"user": auth.get_current_user(request), "results": results}
     )
 
 

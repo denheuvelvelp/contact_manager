@@ -96,16 +96,6 @@ def login_page(request: Request, next: Optional[str] = "/contacten", missing_oau
                         </svg>
                         <span>Inloggen met @{ALLOWED_DOMAIN}</span>
                     </a>
-
-                    <!-- Lokale ontwikkel / bypass knop -->
-                    <div class="pt-2 text-center">
-                        <form method="POST" action="/auth/dev-login">
-                            <button type="submit" class="w-full py-2.5 px-4 bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center space-x-2">
-                                <i class="fa-solid fa-bolt"></i>
-                                <span>Direct inloggen als beheerder (Lokaal)</span>
-                            </button>
-                        </form>
-                    </div>
                 </div>
 
                 <div class="text-center pt-2">
@@ -218,16 +208,6 @@ async def google_callback(request: Request, code: Optional[str] = None, error: O
         "picture": picture
     }
 
-    return RedirectResponse(url="/contacten", status_code=303)
-
-
-@auth_router.post("/auth/dev-login")
-def dev_login_action(request: Request):
-    request.session["user"] = {
-        "email": f"huismeester@{ALLOWED_DOMAIN}",
-        "name": "Huismeester (Lokaal Beheerder)",
-        "picture": ""
-    }
     return RedirectResponse(url="/contacten", status_code=303)
 
 
