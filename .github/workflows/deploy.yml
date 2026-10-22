@@ -82,7 +82,7 @@ jobs:
             --max-instances=2
             --memory=512Mi
             --cpu=1
-            --set-env-vars=USE_FIRESTORE=true,FIRESTORE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},FIRESTORE_COLLECTION=cooperatie_contacten,GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},ALLOWED_DOMAIN=denheuvelvelp.nl
+            --set-env-vars=USE_FIRESTORE=true,FIRESTORE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},FIRESTORE_COLLECTION=cooperatie_contacten,GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},ALLOWED_DOMAIN=denheuvelvelp.nl,GOOGLE_WORKSPACE_ADMIN_EMAIL=${{ secrets.GOOGLE_WORKSPACE_ADMIN_EMAIL || 'alberdao@denheuvelvelp.nl' }},GOOGLE_WORKSPACE_CREDENTIALS_JSON=${{ secrets.GOOGLE_WORKSPACE_CREDENTIALS_JSON }},GOOGLE_WORKSPACE_DOMAIN=denheuvelvelp.nl
 
       # --- 2. Bouw en Deploy VvE App ---
       - name: Bouw VvE Container Image
@@ -108,7 +108,7 @@ jobs:
             --max-instances=2
             --memory=512Mi
             --cpu=1
-            --set-env-vars=USE_FIRESTORE=true,FIRESTORE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},FIRESTORE_COLLECTION=vve_contacten,GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},ALLOWED_DOMAIN=denheuvelvelp.nl
+            --set-env-vars=USE_FIRESTORE=true,FIRESTORE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},FIRESTORE_COLLECTION=vve_contacten,GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},ALLOWED_DOMAIN=denheuvelvelp.nl,GOOGLE_WORKSPACE_ADMIN_EMAIL=${{ secrets.GOOGLE_WORKSPACE_ADMIN_EMAIL || 'alberdao@denheuvelvelp.nl' }},GOOGLE_WORKSPACE_CREDENTIALS_JSON=${{ secrets.GOOGLE_WORKSPACE_CREDENTIALS_JSON }},GOOGLE_WORKSPACE_DOMAIN=denheuvelvelp.nl
 
       - name: Deployment URLs Overzicht
         run: |
