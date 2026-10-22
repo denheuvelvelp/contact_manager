@@ -43,6 +43,8 @@ temp/
 service-account*.json
 credentials.json
 gcp-key.json
+*-key.json
+config/
 
 # IDE & OS
 .vscode/

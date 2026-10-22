@@ -1,0 +1,9 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'europe-west4-docker.pkg.dev/den-heuvel-api-projecten/contact-manager/cooperatie-app:latest', '-f', 'apps/cooperatie/Dockerfile', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'europe-west4-docker.pkg.dev/den-heuvel-api-projecten/contact-manager/vve-app:latest', '-f', 'apps/vve/Dockerfile', '.']
+images:
+  - 'europe-west4-docker.pkg.dev/den-heuvel-api-projecten/contact-manager/cooperatie-app:latest'
+  - 'europe-west4-docker.pkg.dev/den-heuvel-api-projecten/contact-manager/vve-app:latest'
+
