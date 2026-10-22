@@ -5,6 +5,20 @@
 {% block content %}
 <div class="space-y-6">
 
+    <!-- Reset Melding Banner (indien zojuist gereset) -->
+    {% if was_reset %}
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between text-blue-900 shadow-sm">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-circle-check text-blue-600 text-lg"></i>
+            <div>
+                <p class="font-bold text-sm">Database succesvol gereset</p>
+                <p class="text-xs text-blue-700">Alle contacten zijn gewist. Je kunt nu weer helemaal vanaf nul beginnen.</p>
+            </div>
+        </div>
+        <a href="/contacten" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">&times; Sluiten</a>
+    </div>
+    {% endif %}
+
     <!-- KPI / Teller Banner -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -19,11 +33,11 @@
 
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Met Noodtelefoon</p>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Met Noodcontact</p>
                 <p class="text-2xl font-bold text-slate-800 mt-1">{{ with_emergency_count }}</p>
             </div>
             <div class="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
-                <i class="fa-solid fa-phone-volume"></i>
+                <i class="fa-solid fa-kit-medical"></i>
             </div>
         </div>
 
@@ -38,7 +52,7 @@
         </div>
     </div>
 
-    <!-- Zoekbalk & Filters -->
+    <!-- Zoekbalk, Filters & Resetknop -->
     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
         <form method="GET" action="/contacten" class="flex-1 w-full flex gap-2">
             <div class="relative flex-1">
@@ -49,7 +63,7 @@
                     type="text" 
                     name="q" 
                     value="{{ search_query or '' }}" 
-                    placeholder="Zoek op indexnummer, naam, adres, telefoon of e-mail..." 
+                    placeholder="Zoek op indexnummer, bewoner, adres, tel (1, 2, 3), e-mail of noodpersoon..." 
                     class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 />
             </div>
@@ -66,7 +80,7 @@
             {% endif %}
         </form>
 
-        <!-- Quick filter switches -->
+        <!-- Quick filter switches & Reset Knop -->
         <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
             <a 
                 href="/contacten{% if search_query %}?q={{ search_query }}{% endif %}" 
@@ -77,8 +91,16 @@
                 href="/contacten?minder_mobiel=1{% if search_query %}&q={{ search_query }}{% endif %}" 
                 class="px-3 py-1.5 text-xs font-semibold rounded-lg transition border flex items-center space-x-1 {% if minder_mobiel_only %}bg-amber-600 text-white border-amber-600{% else %}bg-white text-amber-700 border-amber-200 hover:bg-amber-50{% endif %}">
                 <i class="fa-solid fa-wheelchair"></i>
-                <span>Alleen Minder Mobiel</span>
+                <span>Minder Mobiel</span>
             </a>
+
+            <!-- Resetknop vanaf nul -->
+            <form method="POST" action="/contacten/reset" onsubmit="return confirm('WAARSCHUWING:\n\nWeet je 100% zeker dat je ALLE contacten uit de database wilt wissen om weer vanaf nul te beginnen?\n\nDit kan niet ongedaan worden gemaakt.');" class="inline">
+                <button type="submit" title="Wis alle contacten en begin vanaf nul" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-semibold transition flex items-center space-x-1">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Reset</span>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -91,8 +113,8 @@
                     <tr>
                         <th class="px-4 py-3 font-semibold">Index</th>
                         <th class="px-4 py-3 font-semibold">Adres & Bestemming</th>
-                        <th class="px-4 py-3 font-semibold">Bewoner</th>
-                        <th class="px-4 py-3 font-semibold">Primair Contact</th>
+                        <th class="px-4 py-3 font-semibold">Eigenaar / Bewoner</th>
+                        <th class="px-4 py-3 font-semibold">Contactgegevens Eigenaar</th>
                         <th class="px-4 py-3 font-semibold">Noodcontacten (2x)</th>
                         <th class="px-4 py-3 font-semibold text-center">Status</th>
                         <th class="px-4 py-3 font-semibold text-right">Acties</th>
@@ -122,47 +144,88 @@
                             {% endif %}
                         </td>
 
-                        <!-- Primair Contact -->
-                        <td class="px-4 py-3 text-xs space-y-0.5">
-                            {% if c.telefoonnummer %}
-                            <div class="flex items-center space-x-1.5 text-slate-700">
-                                <i class="fa-solid fa-phone text-slate-400 w-3"></i>
-                                <a href="tel:{{ c.telefoonnummer }}" class="hover:underline font-mono">{{ c.telefoonnummer }}</a>
+                        <!-- Contactgegevens Eigenaar (Meerdere tel/mail van eigenaar zelf) -->
+                        <td class="px-4 py-3 text-xs space-y-1">
+                            <!-- Telefoonnummers eigenaar -->
+                            {% if c.telefoonnummer or c.telefoonnummer_2 or c.telefoonnummer_3 %}
+                            <div class="space-y-0.5">
+                                {% if c.telefoonnummer %}
+                                <div class="flex items-center space-x-1.5 text-slate-800">
+                                    <i class="fa-solid fa-phone text-slate-400 w-3"></i>
+                                    <a href="tel:{{ c.telefoonnummer }}" class="hover:underline font-mono">{{ c.telefoonnummer }}</a>
+                                    <span class="text-[10px] text-slate-400">(primair)</span>
+                                </div>
+                                {% endif %}
+                                {% if c.telefoonnummer_2 %}
+                                <div class="flex items-center space-x-1.5 text-slate-600">
+                                    <i class="fa-solid fa-phone text-slate-300 w-3"></i>
+                                    <a href="tel:{{ c.telefoonnummer_2 }}" class="hover:underline font-mono">{{ c.telefoonnummer_2 }}</a>
+                                    <span class="text-[10px] text-slate-400">(tel 2)</span>
+                                </div>
+                                {% endif %}
+                                {% if c.telefoonnummer_3 %}
+                                <div class="flex items-center space-x-1.5 text-slate-600">
+                                    <i class="fa-solid fa-phone text-slate-300 w-3"></i>
+                                    <a href="tel:{{ c.telefoonnummer_3 }}" class="hover:underline font-mono">{{ c.telefoonnummer_3 }}</a>
+                                    <span class="text-[10px] text-slate-400">(tel 3)</span>
+                                </div>
+                                {% endif %}
                             </div>
                             {% endif %}
-                            {% if c.email %}
-                            <div class="flex items-center space-x-1.5 text-slate-600 truncate max-w-xs">
-                                <i class="fa-solid fa-envelope text-slate-400 w-3"></i>
-                                <a href="mailto:{{ c.email }}" class="hover:underline">{{ c.email }}</a>
+
+                            <!-- E-mails eigenaar -->
+                            {% if c.email or c.email_2 or c.email_3 %}
+                            <div class="space-y-0.5 pt-0.5 border-t border-slate-100">
+                                {% if c.email %}
+                                <div class="flex items-center space-x-1.5 text-slate-700 truncate max-w-xs">
+                                    <i class="fa-solid fa-envelope text-slate-400 w-3"></i>
+                                    <a href="mailto:{{ c.email }}" class="hover:underline">{{ c.email }}</a>
+                                </div>
+                                {% endif %}
+                                {% if c.email_2 %}
+                                <div class="flex items-center space-x-1.5 text-slate-500 text-[11px] truncate max-w-xs">
+                                    <i class="fa-solid fa-envelope text-slate-300 w-3"></i>
+                                    <a href="mailto:{{ c.email_2 }}" class="hover:underline">{{ c.email_2 }}</a>
+                                    <span class="text-[9px] text-slate-400">(mail 2)</span>
+                                </div>
+                                {% endif %}
+                                {% if c.email_3 %}
+                                <div class="flex items-center space-x-1.5 text-slate-500 text-[11px] truncate max-w-xs">
+                                    <i class="fa-solid fa-envelope text-slate-300 w-3"></i>
+                                    <a href="mailto:{{ c.email_3 }}" class="hover:underline">{{ c.email_3 }}</a>
+                                    <span class="text-[9px] text-slate-400">(mail 3)</span>
+                                </div>
+                                {% endif %}
                             </div>
                             {% endif %}
-                            {% if not c.telefoonnummer and not c.email %}
+
+                            {% if not c.telefoonnummer and not c.telefoonnummer_2 and not c.telefoonnummer_3 and not c.email and not c.email_2 and not c.email_3 %}
                             <span class="text-slate-400 italic">Geen contactgegevens</span>
                             {% endif %}
                         </td>
 
-                        <!-- Noodcontacten -->
+                        <!-- Aparte Noodcontacten -->
                         <td class="px-4 py-3 text-xs space-y-1">
                             <!-- Noodcontact 1 -->
-                            {% if c.telefoonnummer_2 or c.email_2 or c.noodcontactpersoon_1 %}
+                            {% if c.noodcontact_1_naam or c.noodcontact_1_telefoon or c.noodcontact_1_email %}
                             <div class="bg-red-50 text-red-900 p-1.5 rounded border border-red-100">
-                                <span class="font-bold text-[10px] uppercase text-red-700 block">Nood 1: {{ c.noodcontactpersoon_1 or 'Naam n.t.b.' }}</span>
-                                {% if c.telefoonnummer_2 %}<a href="tel:{{ c.telefoonnummer_2 }}" class="font-mono hover:underline mr-2">{{ c.telefoonnummer_2 }}</a>{% endif %}
-                                {% if c.email_2 %}<span class="text-slate-500 text-[11px]">{{ c.email_2 }}</span>{% endif %}
+                                <span class="font-bold text-[10px] uppercase text-red-700 block">Nood 1: {{ c.noodcontact_1_naam or 'Naam n.t.b.' }}</span>
+                                {% if c.noodcontact_1_telefoon %}<a href="tel:{{ c.noodcontact_1_telefoon }}" class="font-mono hover:underline mr-2">{{ c.noodcontact_1_telefoon }}</a>{% endif %}
+                                {% if c.noodcontact_1_email %}<span class="text-slate-500 text-[11px]">{{ c.noodcontact_1_email }}</span>{% endif %}
                             </div>
                             {% endif %}
 
                             <!-- Noodcontact 2 -->
-                            {% if c.telefoonnummer_3 or c.email_3 or c.noodcontactpersoon_2 %}
+                            {% if c.noodcontact_2_naam or c.noodcontact_2_telefoon or c.noodcontact_2_email %}
                             <div class="bg-orange-50 text-orange-900 p-1.5 rounded border border-orange-100">
-                                <span class="font-bold text-[10px] uppercase text-orange-700 block">Nood 2: {{ c.noodcontactpersoon_2 or 'Naam n.t.b.' }}</span>
-                                {% if c.telefoonnummer_3 %}<a href="tel:{{ c.telefoonnummer_3 }}" class="font-mono hover:underline mr-2">{{ c.telefoonnummer_3 }}</a>{% endif %}
-                                {% if c.email_3 %}<span class="text-slate-500 text-[11px]">{{ c.email_3 }}</span>{% endif %}
+                                <span class="font-bold text-[10px] uppercase text-orange-700 block">Nood 2: {{ c.noodcontact_2_naam or 'Naam n.t.b.' }}</span>
+                                {% if c.noodcontact_2_telefoon %}<a href="tel:{{ c.noodcontact_2_telefoon }}" class="font-mono hover:underline mr-2">{{ c.noodcontact_2_telefoon }}</a>{% endif %}
+                                {% if c.noodcontact_2_email %}<span class="text-slate-500 text-[11px]">{{ c.noodcontact_2_email }}</span>{% endif %}
                             </div>
                             {% endif %}
 
-                            {% if not (c.telefoonnummer_2 or c.email_2 or c.noodcontactpersoon_1 or c.telefoonnummer_3 or c.email_3 or c.noodcontactpersoon_2) %}
-                            <span class="text-slate-400 italic text-[11px]">&mdash;</span>
+                            {% if not (c.noodcontact_1_naam or c.noodcontact_1_telefoon or c.noodcontact_1_email or c.noodcontact_2_naam or c.noodcontact_2_telefoon or c.noodcontact_2_email) %}
+                            <span class="text-slate-400 italic text-[11px]">&mdash; Geen noodcontact &mdash;</span>
                             {% endif %}
                         </td>
 
@@ -194,12 +257,12 @@
             <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 text-2xl mb-3">
                 <i class="fa-solid fa-folder-open"></i>
             </div>
-            <h3 class="text-base font-semibold text-slate-700">Geen contacten gevonden</h3>
+            <h3 class="text-base font-semibold text-slate-700">Geen contacten in het systeem</h3>
             <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
                 {% if search_query %}
                 Er zijn geen bewoners die overeenkomen met je zoekopdracht "{{ search_query }}".
                 {% else %}
-                Er staan nog geen bewoners in het systeem. Importeer de wekelijkse Rebo CSV of voeg een eerste contact toe.
+                De database is leeg. Je kunt direct de wekelijkse Rebo CSV importeren of handmatig een bewoner toevoegen.
                 {% endif %}
             </p>
             <div class="mt-6 flex justify-center gap-3">

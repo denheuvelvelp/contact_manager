@@ -35,7 +35,8 @@ def index_redirect():
 def list_contacts(
     request: Request,
     q: Optional[str] = None,
-    minder_mobiel: Optional[int] = None
+    minder_mobiel: Optional[int] = None,
+    reset: Optional[int] = None
 ):
     db = get_db()
     minder_mobiel_bool = bool(minder_mobiel == 1)
@@ -46,7 +47,8 @@ def list_contacts(
     total_count = len(all_contacts)
     with_emergency_count = sum(
         1 for c in all_contacts
-        if c.telefoonnummer_2 or c.telefoonnummer_3 or c.email_2 or c.email_3 or c.noodcontactpersoon_1 or c.noodcontactpersoon_2
+        if c.noodcontact_1_naam or c.noodcontact_1_telefoon or c.noodcontact_1_email
+        or c.noodcontact_2_naam or c.noodcontact_2_telefoon or c.noodcontact_2_email
     )
     minder_mobiel_count = sum(1 for c in all_contacts if c.minder_mobiel)
 
@@ -60,8 +62,17 @@ def list_contacts(
             "total_count": total_count,
             "with_emergency_count": with_emergency_count,
             "minder_mobiel_count": minder_mobiel_count,
+            "was_reset": bool(reset == 1)
         }
     )
+
+
+@app.post("/contacten/reset")
+def reset_database_action():
+    """Wist alle contacten in de database zodat de gebruiker vanaf nul kan beginnen."""
+    db = get_db()
+    db.reset_all()
+    return RedirectResponse(url="/contacten?reset=1", status_code=303)
 
 
 @app.get("/contacten/nieuw", response_class=HTMLResponse)
@@ -80,14 +91,21 @@ def create_contact_action(
     adres_appartementsrecht: str = Form(...),
     naam: str = Form(...),
     postadres: str = Form(""),
+    # Contacten van de eigenaar
     telefoonnummer: str = Form(""),
     telefoonnummer_2: str = Form(""),
     telefoonnummer_3: str = Form(""),
     email: str = Form(""),
     email_2: str = Form(""),
     email_3: str = Form(""),
-    noodcontactpersoon_1: str = Form(""),
-    noodcontactpersoon_2: str = Form(""),
+    # Aparte noodcontacten
+    noodcontact_1_naam: str = Form(""),
+    noodcontact_1_telefoon: str = Form(""),
+    noodcontact_1_email: str = Form(""),
+    noodcontact_2_naam: str = Form(""),
+    noodcontact_2_telefoon: str = Form(""),
+    noodcontact_2_email: str = Form(""),
+    # Huismeester velden
     etage: str = Form(""),
     minder_mobiel: Optional[int] = Form(None),
     huisdieren: str = Form(""),
@@ -95,8 +113,7 @@ def create_contact_action(
     notities: str = Form("")
 ):
     db = get_db()
-    
-    # Controleer of index al bestaat
+
     existing = db.find_existing(index_nummer, adres_appartementsrecht)
     if existing:
         msg = f"Contact met index '{index_nummer}' of adres '{adres_appartementsrecht}' bestaat al."
@@ -114,8 +131,12 @@ def create_contact_action(
         email=email,
         email_2=email_2,
         email_3=email_3,
-        noodcontactpersoon_1=noodcontactpersoon_1,
-        noodcontactpersoon_2=noodcontactpersoon_2,
+        noodcontact_1_naam=noodcontact_1_naam,
+        noodcontact_1_telefoon=noodcontact_1_telefoon,
+        noodcontact_1_email=noodcontact_1_email,
+        noodcontact_2_naam=noodcontact_2_naam,
+        noodcontact_2_telefoon=noodcontact_2_telefoon,
+        noodcontact_2_email=noodcontact_2_email,
         etage=etage,
         minder_mobiel=bool(minder_mobiel == 1),
         huisdieren=huisdieren,
@@ -148,14 +169,21 @@ def update_contact_action(
     adres_appartementsrecht: str = Form(...),
     naam: str = Form(...),
     postadres: str = Form(""),
+    # Contacten van de eigenaar
     telefoonnummer: str = Form(""),
     telefoonnummer_2: str = Form(""),
     telefoonnummer_3: str = Form(""),
     email: str = Form(""),
     email_2: str = Form(""),
     email_3: str = Form(""),
-    noodcontactpersoon_1: str = Form(""),
-    noodcontactpersoon_2: str = Form(""),
+    # Aparte noodcontacten
+    noodcontact_1_naam: str = Form(""),
+    noodcontact_1_telefoon: str = Form(""),
+    noodcontact_1_email: str = Form(""),
+    noodcontact_2_naam: str = Form(""),
+    noodcontact_2_telefoon: str = Form(""),
+    noodcontact_2_email: str = Form(""),
+    # Huismeester velden
     etage: str = Form(""),
     minder_mobiel: Optional[int] = Form(None),
     huisdieren: str = Form(""),
@@ -178,8 +206,12 @@ def update_contact_action(
         email=email,
         email_2=email_2,
         email_3=email_3,
-        noodcontactpersoon_1=noodcontactpersoon_1,
-        noodcontactpersoon_2=noodcontactpersoon_2,
+        noodcontact_1_naam=noodcontact_1_naam,
+        noodcontact_1_telefoon=noodcontact_1_telefoon,
+        noodcontact_1_email=noodcontact_1_email,
+        noodcontact_2_naam=noodcontact_2_naam,
+        noodcontact_2_telefoon=noodcontact_2_telefoon,
+        noodcontact_2_email=noodcontact_2_email,
         etage=etage,
         minder_mobiel=bool(minder_mobiel == 1),
         huisdieren=huisdieren,

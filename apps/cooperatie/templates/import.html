@@ -6,14 +6,21 @@
 <div class="max-w-4xl mx-auto space-y-6">
 
     <!-- Koptekst -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
             <h1 class="text-xl font-bold text-slate-900">Wekelijkse CSV Import (Rebo)</h1>
             <p class="text-xs text-slate-500">Coöperatieve Vereniging &bull; Bewonersbestand synchroniseren</p>
         </div>
-        <a href="/sample-csv" class="inline-flex items-center px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition border border-slate-200">
-            <i class="fa-solid fa-download mr-1.5 text-brand-600"></i> Voorbeeld CSV Downloaden
-        </a>
+        <div class="flex items-center space-x-2">
+            <a href="/sample-csv" class="inline-flex items-center px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition border border-slate-200">
+                <i class="fa-solid fa-download mr-1.5 text-brand-600"></i> Voorbeeld CSV
+            </a>
+            <form method="POST" action="/contacten/reset" onsubmit="return confirm('WAARSCHUWING:\n\nWeet je 100% zeker dat je ALLE contacten uit de database wilt wissen om weer vanaf nul te beginnen?\n\nDit kan niet ongedaan worden gemaakt.');" class="inline">
+                <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-xs font-semibold transition border border-red-200">
+                    <i class="fa-solid fa-trash-can mr-1.5"></i> Database Resetten
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Belangrijke regel banner -->
@@ -176,3 +183,4 @@ function updateFileName(input) {
 }
 </script>
 {% endblock %}
+

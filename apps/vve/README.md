@@ -6,3 +6,4 @@ Zij zal gericht zijn op:
 - Bedrijven / commerciële plintruimtes
 - Garagehouders / parkeerplaats-eigenaren
 - Breukdelen / stemverhoudingen en eigenaren-specifieke noodcontacten
+

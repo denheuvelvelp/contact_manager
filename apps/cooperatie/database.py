@@ -47,8 +47,12 @@ class SQLiteStore:
                     email TEXT,
                     email_2 TEXT,
                     email_3 TEXT,
-                    noodcontactpersoon_1 TEXT,
-                    noodcontactpersoon_2 TEXT,
+                    noodcontact_1_naam TEXT,
+                    noodcontact_1_telefoon TEXT,
+                    noodcontact_1_email TEXT,
+                    noodcontact_2_naam TEXT,
+                    noodcontact_2_telefoon TEXT,
+                    noodcontact_2_email TEXT,
                     etage TEXT,
                     minder_mobiel INTEGER DEFAULT 0,
                     huisdieren TEXT,
@@ -79,10 +83,12 @@ class SQLiteStore:
             if search:
                 query += (
                     " AND (index_nummer LIKE ? OR naam LIKE ? OR adres_appartementsrecht LIKE ?"
-                    " OR telefoonnummer LIKE ? OR email LIKE ?)"
+                    " OR telefoonnummer LIKE ? OR telefoonnummer_2 LIKE ? OR telefoonnummer_3 LIKE ?"
+                    " OR email LIKE ? OR email_2 LIKE ? OR email_3 LIKE ?"
+                    " OR noodcontact_1_naam LIKE ? OR noodcontact_2_naam LIKE ?)"
                 )
                 term = f"%{search}%"
-                params.extend([term, term, term, term, term])
+                params.extend([term] * 11)
 
             query += " ORDER BY CAST(index_nummer AS INTEGER) ASC, index_nummer ASC"
             cursor.execute(query, params)
@@ -121,10 +127,11 @@ class SQLiteStore:
                     id, index_nummer, bestemming, adres_appartementsrecht, naam, postadres,
                     telefoonnummer, telefoonnummer_2, telefoonnummer_3,
                     email, email_2, email_3,
-                    noodcontactpersoon_1, noodcontactpersoon_2, etage,
-                    minder_mobiel, huisdieren, intercom_naam, notities,
+                    noodcontact_1_naam, noodcontact_1_telefoon, noodcontact_1_email,
+                    noodcontact_2_naam, noodcontact_2_telefoon, noodcontact_2_email,
+                    etage, minder_mobiel, huisdieren, intercom_naam, notities,
                     aangemaakt_op, bijgewerkt_op
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 contact_id,
                 contact_in.index_nummer.strip(),
@@ -138,8 +145,12 @@ class SQLiteStore:
                 contact_in.email or "",
                 contact_in.email_2 or "",
                 contact_in.email_3 or "",
-                contact_in.noodcontactpersoon_1 or "",
-                contact_in.noodcontactpersoon_2 or "",
+                contact_in.noodcontact_1_naam or "",
+                contact_in.noodcontact_1_telefoon or "",
+                contact_in.noodcontact_1_email or "",
+                contact_in.noodcontact_2_naam or "",
+                contact_in.noodcontact_2_telefoon or "",
+                contact_in.noodcontact_2_email or "",
                 contact_in.etage or "",
                 1 if contact_in.minder_mobiel else 0,
                 contact_in.huisdieren or "",
@@ -181,6 +192,16 @@ class SQLiteStore:
             conn.commit()
             return cursor.rowcount > 0
 
+    def reset_all(self) -> int:
+        """Wist alle contacten zodat de gebruiker vanaf nul kan beginnen."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM contacten")
+            count = cursor.fetchone()[0]
+            cursor.execute("DELETE FROM contacten")
+            conn.commit()
+            return count
+
 
 class FirestoreStore:
     def __init__(self, client, collection_name: str):
@@ -207,10 +228,15 @@ class FirestoreStore:
                 or s in c.naam.lower()
                 or s in c.adres_appartementsrecht.lower()
                 or s in (c.telefoonnummer or "").lower()
+                or s in (c.telefoonnummer_2 or "").lower()
+                or s in (c.telefoonnummer_3 or "").lower()
                 or s in (c.email or "").lower()
+                or s in (c.email_2 or "").lower()
+                or s in (c.email_3 or "").lower()
+                or s in (c.noodcontact_1_naam or "").lower()
+                or s in (c.noodcontact_2_naam or "").lower()
             ]
 
-        # Sorteer op index_nummer
         results.sort(key=lambda x: (int(x.index_nummer) if x.index_nummer.isdigit() else 999999, x.index_nummer))
         return results
 
@@ -279,6 +305,14 @@ class FirestoreStore:
             return False
         doc_ref.delete()
         return True
+
+    def reset_all(self) -> int:
+        """Wist alle documenten in de Firestore collectie."""
+        docs = list(self.col.stream())
+        count = len(docs)
+        for doc in docs:
+            doc.reference.delete()
+        return count
 
 
 # Actieve repository selector

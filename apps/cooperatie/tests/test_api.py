@@ -26,11 +26,10 @@ def test_health_check(client):
 def test_contacten_page_empty(client):
     response = client.get("/contacten")
     assert response.status_code == 200
-    assert "Geen contacten gevonden" in response.text
+    assert "Geen contacten in het systeem" in response.text
 
 
 def test_create_and_view_contact(client):
-    # Voeg nieuw contact toe via form POST
     payload = {
         "index_nummer": "301",
         "bestemming": "Woning",
@@ -41,10 +40,14 @@ def test_create_and_view_contact(client):
         "telefoonnummer_2": "06-99887766",
         "telefoonnummer_3": "06-55443322",
         "email": "test@bewoner.nl",
-        "email_2": "nood1@bewoner.nl",
-        "email_3": "nood2@bewoner.nl",
-        "noodcontactpersoon_1": "Contact Persoon 1",
-        "noodcontactpersoon_2": "Contact Persoon 2",
+        "email_2": "werk@bewoner.nl",
+        "email_3": "extra@bewoner.nl",
+        "noodcontact_1_naam": "Contact Persoon 1",
+        "noodcontact_1_telefoon": "06-12121212",
+        "noodcontact_1_email": "nood1@bewoner.nl",
+        "noodcontact_2_naam": "Contact Persoon 2",
+        "noodcontact_2_telefoon": "06-34343434",
+        "noodcontact_2_email": "nood2@bewoner.nl",
         "etage": "3",
         "minder_mobiel": 1,
         "huisdieren": "1 hond",
@@ -56,11 +59,10 @@ def test_create_and_view_contact(client):
     assert "Test Bewoner" in response.text
     assert "301" in response.text
 
-    # Bekijk overzicht
     list_res = client.get("/contacten")
     assert "Test Bewoner" in list_res.text
     assert "Molenwerf 30-A" in list_res.text
-    assert "Zorg/Mobiel" in list_res.text
+    assert "Contact Persoon 1" in list_res.text
 
 
 def test_csv_upload_flow(client):
@@ -68,7 +70,7 @@ def test_csv_upload_flow(client):
         b"Index nummer,Bestemming,Adres appartementsrecht,Naam,Postadres,"
         b"Telefoonnummer,Telefoonnummer 2,Telefoonnummer 3,Email,Email 2,Email 3\n"
     )
-    row = b"401,Woning,Molenwerf 40,Upload Bewoner,Molenwerf 40,0699999999,,,,,\n"
+    row = b"401,Woning,Molenwerf 40,Upload Bewoner,Molenwerf 40,0699999999,0688888888,,upload@test.nl,,\n"
     csv_bytes = header + row
 
     response = client.post(
@@ -78,3 +80,23 @@ def test_csv_upload_flow(client):
     assert response.status_code == 200
     assert "Nieuw Toegevoegd" in response.text
     assert "Upload Bewoner" in response.text
+
+
+def test_reset_endpoint(client):
+    # Eerst toevoegen
+    payload = {
+        "index_nummer": "501",
+        "bestemming": "Woning",
+        "adres_appartementsrecht": "Molenwerf 50",
+        "naam": "Te Wissen Bewoner",
+        "telefoonnummer": "0612345678",
+        "email": "wissen@test.nl"
+    }
+    client.post("/contacten/nieuw", data=payload)
+    assert "Te Wissen Bewoner" in client.get("/contacten").text
+
+    # Reset uitvoeren
+    res = client.post("/contacten/reset", follow_redirects=True)
+    assert res.status_code == 200
+    assert "Database succesvol gereset" in res.text
+    assert "Te Wissen Bewoner" not in res.text

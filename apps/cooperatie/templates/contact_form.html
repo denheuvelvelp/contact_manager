@@ -98,11 +98,14 @@
             </div>
         </div>
 
-        <!-- Sectie 2: Bewoner & Primair Contact -->
+        <!-- Sectie 2: Contactgegevens Eigenaar (Meerdere tel/mail) -->
         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center text-brand-700 border-b border-slate-100 pb-2">
-                <i class="fa-solid fa-user mr-2"></i> 2. Bewonersgegevens (Primair)
+                <i class="fa-solid fa-user mr-2"></i> 2. Eigenaar / Bewoner Contactgegevens
             </h2>
+            <p class="text-xs text-slate-500">
+                Dit zijn de reguliere contactgegevens van de eigenaar/bewoner zelf (zoals aangeleverd via Rebo).
+            </p>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
@@ -128,37 +131,83 @@
                     />
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Telefoonnummer (Primair)</label>
-                    <input 
-                        type="tel" 
-                        name="telefoonnummer" 
-                        value="{{ contact.telefoonnummer if contact else '' }}" 
-                        placeholder="06-12345678" 
-                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                    />
+                <!-- Telefoonnummers eigenaar -->
+                <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Telefoonnummer (Primair)</label>
+                        <input 
+                            type="tel" 
+                            name="telefoonnummer" 
+                            value="{{ contact.telefoonnummer if contact else '' }}" 
+                            placeholder="06-12345678" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Telefoonnummer 2 (Extra)</label>
+                        <input 
+                            type="tel" 
+                            name="telefoonnummer_2" 
+                            value="{{ contact.telefoonnummer_2 if contact else '' }}" 
+                            placeholder="06-87654321" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Telefoonnummer 3 (Extra)</label>
+                        <input 
+                            type="tel" 
+                            name="telefoonnummer_3" 
+                            value="{{ contact.telefoonnummer_3 if contact else '' }}" 
+                            placeholder="020-5551234" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                        />
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail (Primair)</label>
-                    <input 
-                        type="email" 
-                        name="email" 
-                        value="{{ contact.email if contact else '' }}" 
-                        placeholder="bewoner@example.com" 
-                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                    />
+                <!-- E-mailadressen eigenaar -->
+                <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail (Primair)</label>
+                        <input 
+                            type="email" 
+                            name="email" 
+                            value="{{ contact.email if contact else '' }}" 
+                            placeholder="bewoner@example.com" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail 2 (Extra)</label>
+                        <input 
+                            type="email" 
+                            name="email_2" 
+                            value="{{ contact.email_2 if contact else '' }}" 
+                            placeholder="werk@example.com" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail 3 (Extra)</label>
+                        <input 
+                            type="email" 
+                            name="email_3" 
+                            value="{{ contact.email_3 if contact else '' }}" 
+                            placeholder="partner@example.com" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sectie 3: Twee Noodcontacten (De kernwens) -->
+        <!-- Sectie 3: Aparte Noodcontacten (Calamiteiten) -->
         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-red-700 uppercase tracking-wider flex items-center border-b border-red-100 pb-2">
                 <i class="fa-solid fa-kit-medical mr-2"></i> 3. Noodcontactpersonen (2x)
             </h2>
             <p class="text-xs text-slate-500">
-                Wordt gebruikt door de huismeester en hulpdiensten bij incidenten, storingen of calamiteiten.
+                Aparte contactpersonen voor calamiteiten (bijv. mantelzorgers, familie, buren of sleutelhouders).
             </p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
@@ -172,30 +221,30 @@
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Naam contactpersoon 1</label>
                         <input 
                             type="text" 
-                            name="noodcontactpersoon_1" 
-                            value="{{ contact.noodcontactpersoon_1 if contact else '' }}" 
+                            name="noodcontact_1_naam" 
+                            value="{{ contact.noodcontact_1_naam if contact else '' }}" 
                             placeholder="bijv. Familie / Dochter / Buurman" 
                             class="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-400 focus:outline-none"
                         />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Noodtelefoonnummer 1 (Telefoonnummer 2)</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Noodtelefoonnummer 1</label>
                         <input 
                             type="tel" 
-                            name="telefoonnummer_2" 
-                            value="{{ contact.telefoonnummer_2 if contact else '' }}" 
+                            name="noodcontact_1_telefoon" 
+                            value="{{ contact.noodcontact_1_telefoon if contact else '' }}" 
                             placeholder="06-98765432" 
                             class="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-red-400 focus:outline-none"
                         />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nood-e-mail 1 (Email 2)</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nood-e-mail 1</label>
                         <input 
                             type="email" 
-                            name="email_2" 
-                            value="{{ contact.email_2 if contact else '' }}" 
+                            name="noodcontact_1_email" 
+                            value="{{ contact.noodcontact_1_email if contact else '' }}" 
                             placeholder="nood1@example.com" 
                             class="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-400 focus:outline-none"
                         />
@@ -212,30 +261,30 @@
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Naam contactpersoon 2</label>
                         <input 
                             type="text" 
-                            name="noodcontactpersoon_2" 
-                            value="{{ contact.noodcontactpersoon_2 if contact else '' }}" 
+                            name="noodcontact_2_naam" 
+                            value="{{ contact.noodcontact_2_naam if contact else '' }}" 
                             placeholder="bijv. Zoon / Mantelzorger / Ouders" 
                             class="w-full px-3 py-2 bg-white border border-orange-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
                         />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Noodtelefoonnummer 2 (Telefoonnummer 3)</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Noodtelefoonnummer 2</label>
                         <input 
                             type="tel" 
-                            name="telefoonnummer_3" 
-                            value="{{ contact.telefoonnummer_3 if contact else '' }}" 
+                            name="noodcontact_2_telefoon" 
+                            value="{{ contact.noodcontact_2_telefoon if contact else '' }}" 
                             placeholder="020-5551234" 
                             class="w-full px-3 py-2 bg-white border border-orange-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-orange-400 focus:outline-none"
                         />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nood-e-mail 2 (Email 3)</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nood-e-mail 2</label>
                         <input 
                             type="email" 
-                            name="email_3" 
-                            value="{{ contact.email_3 if contact else '' }}" 
+                            name="noodcontact_2_email" 
+                            value="{{ contact.noodcontact_2_email if contact else '' }}" 
                             placeholder="nood2@example.com" 
                             class="w-full px-3 py-2 bg-white border border-orange-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
                         />

@@ -20,3 +20,4 @@ EXPOSE 8080
 
 # Start Uvicorn server
 CMD exec uvicorn apps.cooperatie.main:app --host 0.0.0.0 --port ${PORT:-8080}
+

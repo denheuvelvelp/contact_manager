@@ -16,3 +16,4 @@ services:
       - ./local_data:/app/local_data
       - ./apps/cooperatie:/app/apps/cooperatie
     restart: unless-stopped
+

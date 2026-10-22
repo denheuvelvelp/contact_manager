@@ -147,15 +147,20 @@ def import_cooperatie_csv(file_bytes: bytes, db) -> Dict[str, Any]:
                 adres_appartementsrecht=adres or f"Adres onbekend (regel {row_idx})",
                 naam=naam or "Onbekende bewoner",
                 postadres=get_val(row, "Postadres"),
+                # Contactgegevens van de eigenaar/bewoner zelf
                 telefoonnummer=get_val(row, "Telefoonnummer"),
                 telefoonnummer_2=get_val(row, "Telefoonnummer 2"),
                 telefoonnummer_3=get_val(row, "Telefoonnummer 3"),
                 email=get_val(row, "Email"),
                 email_2=get_val(row, "Email 2"),
                 email_3=get_val(row, "Email 3"),
-                # Noodnamen worden leeg geïnitialiseerd zodat de huismeester ze via de UI kan verrijken
-                noodcontactpersoon_1="",
-                noodcontactpersoon_2=""
+                # Aparte noodcontactpersonen (worden via de beheer-UI door de huismeester beheerd)
+                noodcontact_1_naam="",
+                noodcontact_1_telefoon="",
+                noodcontact_1_email="",
+                noodcontact_2_naam="",
+                noodcontact_2_telefoon="",
+                noodcontact_2_email=""
             )
             created = db.create(contact_data)
             added += 1
@@ -188,3 +193,4 @@ def import_cooperatie_csv(file_bytes: bytes, db) -> Dict[str, Any]:
         "delimiter": delimiter,
         "details": details
     }
+
