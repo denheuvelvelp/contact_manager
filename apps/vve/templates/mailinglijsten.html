@@ -106,6 +106,7 @@
 
                         <!-- Actieknoppen per lijst -->
                         <div class="flex items-center space-x-2 shrink-0">
+                            {% if can_manage %}
                             <a href="/mailinglijsten/{{ ml.id }}/leden" class="px-4 py-2 bg-vve-800 hover:bg-vve-900 text-white rounded-lg text-sm font-semibold transition flex items-center space-x-1 shadow-sm">
                                 <i class="fa-solid fa-user-pen"></i>
                                 <span>Leden Beheren ({{ ml.leden|length }})</span>
@@ -115,6 +116,12 @@
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </form>
+                            {% else %}
+                            <a href="/mailinglijsten/{{ ml.id }}/leden" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 border border-slate-300">
+                                <i class="fa-solid fa-eye"></i>
+                                <span>Leden Inzien ({{ ml.leden|length }})</span>
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -124,15 +131,20 @@
                     <i class="fa-regular fa-envelope-open text-4xl text-slate-300"></i>
                     <p class="font-medium text-slate-700">Er zijn nog geen VvE mailinglijsten aangemaakt.</p>
                     <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                        {% if can_manage %}
                         Gebruik het formulier rechts om een eerste mailinglijst aan te maken (bijv. "Woningeigenaren", "Bedrijven" of "Garageboxhouders").
+                        {% else %}
+                        Alleen beheerder {{ admin_email }} kan nieuwe mededelingenlijsten aanmaken.
+                        {% endif %}
                     </p>
                 </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Rechter kolom: Nieuwe Mailinglijst Aanmaken -->
+        <!-- Rechter kolom: Nieuwe Mailinglijst Aanmaken (Alleen voor alberdao@denheuvelvelp.nl) -->
         <div class="space-y-4">
+            {% if can_manage %}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <div class="border-b border-slate-100 pb-3 mb-4">
                     <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
@@ -178,6 +190,28 @@
                     </button>
                 </form>
             </div>
+            {% else %}
+            <!-- Toegangsbeperking melding voor overige Den Heuvel gebruikers -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div class="flex items-center space-x-3 text-slate-800">
+                    <span class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 text-lg">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-900">Alleen Inzagerechten</h2>
+                        <span class="text-xs text-slate-500">Aanmaakbevoegdheid beperkt</span>
+                    </div>
+                </div>
+                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 leading-relaxed space-y-2">
+                    <p>
+                        U bent ingelogd als <strong class="text-slate-800">{{ user.email }}</strong>. U heeft inzagerechten en mag alle mededelingen- en mailinglijsten bekijken.
+                    </p>
+                    <p>
+                        Het aanmaken of verwijderen van VvE groepen is exclusief voorbehouden aan beheerder <span class="font-mono text-vve-800 font-bold">{{ admin_email }}</span>.
+                    </p>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
     </div>

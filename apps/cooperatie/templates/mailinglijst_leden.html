@@ -61,6 +61,7 @@
         </div>
 
         <!-- Google Workspace Push Knop -->
+        {% if can_manage %}
         <div class="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <form action="/mailinglijsten/{{ mailinglijst.id }}/sync-google" method="POST" onsubmit="return confirm('Wilt u deze {{ huidige_leden|length }} leden nu direct synchroniseren met Google Workspace Groep {{ mailinglijst.email_groep }}?');">
                 <button type="submit" class="w-full sm:w-auto px-5 py-3 bg-brand-700 hover:bg-brand-800 text-white font-bold rounded-lg text-sm transition shadow-sm flex items-center justify-center space-x-2">
@@ -69,6 +70,11 @@
                 </button>
             </form>
         </div>
+        {% else %}
+        <div class="shrink-0 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+            <i class="fa-solid fa-lock text-slate-400 mr-1"></i>Sync voorbehouden aan beheerder
+        </div>
+        {% endif %}
     </div>
 
     <!-- Meldingen -->
@@ -107,7 +113,9 @@
                         <th class="py-3 px-4">Adres</th>
                         <th class="py-3 px-4">Naam Bewoner</th>
                         <th class="py-3 px-4">E-mailadressen</th>
+                        {% if can_manage %}
                         <th class="py-3 px-4 text-right">Actie</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
@@ -132,6 +140,7 @@
                                 </span>
                             {% endif %}
                         </td>
+                        {% if can_manage %}
                         <td class="py-3 px-4 text-right">
                             <form action="/mailinglijsten/{{ mailinglijst.id }}/leden/verwijderen" method="POST" class="inline" onsubmit="return confirm('Weet u zeker dat u {{ lid.naam }} uit deze lijst wilt verwijderen?');">
                                 <input type="hidden" name="contact_id" value="{{ lid.id }}">
@@ -140,6 +149,7 @@
                                 </button>
                             </form>
                         </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -154,7 +164,8 @@
         {% endif %}
     </div>
 
-    <!-- Paneel 2: Handmatig Leden Toevoegen uit Contacten -->
+    <!-- Paneel 2: Handmatig Leden Toevoegen uit Contacten (Alleen Beheerder) -->
+    {% if can_manage %}
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -247,6 +258,17 @@
             </div>
         </form>
     </div>
+    {% else %}
+    <div class="bg-slate-50 rounded-xl border border-slate-200 p-6 text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 text-slate-600">
+            <i class="fa-solid fa-user-lock"></i>
+        </div>
+        <h3 class="text-sm font-bold text-slate-800">Inzagerechten Mededelingenlijst</h3>
+        <p class="text-xs text-slate-500 max-w-md mx-auto">
+            U heeft inzagerechten in deze mededelingenlijst en haar leden. Het toevoegen van bewoners of wijzigen van de lijst kan uitsluitend worden uitgevoerd door <span class="font-semibold text-slate-700">{{ admin_email }}</span>.
+        </p>
+    </div>
+    {% endif %}
 
 </div>
 

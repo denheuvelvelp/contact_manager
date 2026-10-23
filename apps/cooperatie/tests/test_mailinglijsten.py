@@ -20,9 +20,14 @@ def client(monkeypatch):
     monkeypatch.setattr(
         auth,
         "get_current_user",
-        lambda req: {"email": "huismeester@denheuvelvelp.nl", "name": "Huismeester"}
+        lambda req: {"email": req.headers.get("x-user-email", "alberdao@denheuvelvelp.nl"), "name": "User"}
     )
     return TestClient(app)
+
+
+@pytest.fixture
+def client_readonly(client):
+    return TestClient(app, headers={"x-user-email": "andere_gebruiker@denheuvelvelp.nl"})
 
 
 def test_mailinglijsten_overview_empty(client):
@@ -114,3 +119,88 @@ def test_create_and_manage_mailinglijst(client):
     assert res_del.status_code == 200
     assert "Mailinglijst verwijderd" in res_del.text
     assert len(db.list_mailinglijsten()) == 0
+
+
+def test_cooperatie_readonly_user_restrictions(client, client_readonly):
+    db = get_db()
+    c = db.create(ContactCreate(
+        index_nummer="301",
+        adres_appartementsrecht="Den Heuvel 301",
+        naam="Test Bewoner",
+        email="bewoner301@denheuvelvelp.nl"
+    ))
+
+    # Admin maakt lijst aan
+    client.post(
+        "/mailinglijsten/nieuw",
+        data={
+            "naam": "Beveiligde Lijst",
+            "email_prefix": "beveiligd",
+            "omschrijving": "Test"
+        },
+        follow_redirects=True
+    )
+    ml = db.list_mailinglijsten()[0]
+
+    # 1. Niet-admin mag overzicht bekijken (status 200), maar ziet 'Alleen Inzagerechten' en geen aanmaakformulier
+    res_view = client_readonly.get("/mailinglijsten")
+    assert res_view.status_code == 200
+    assert "Alleen Inzagerechten" in res_view.text
+    assert "Leden Inzien" in res_view.text
+    assert 'action="/mailinglijsten/nieuw"' not in res_view.text
+
+    # 2. Niet-admin mag ledenpagina bekijken (status 200), maar kan geen leden toevoegen/verwijderen
+    res_leden_view = client_readonly.get(f"/mailinglijsten/{ml.id}/leden")
+    assert res_leden_view.status_code == 200
+    assert "Inzagerechten Mededelingenlijst" in res_leden_view.text
+    assert "Pushen naar Google Workspace" not in res_leden_view.text
+
+    # 3. Poging om via POST nieuwe lijst aan te maken als niet-admin wordt geweigerd
+    res_unauth_create = client_readonly.post(
+        "/mailinglijsten/nieuw",
+        data={
+            "naam": "Niet Toegestaan",
+            "email_prefix": "hack",
+            "omschrijving": "Test"
+        },
+        follow_redirects=False
+    )
+    assert res_unauth_create.status_code == 303
+    assert "Alleen+alberdao@denheuvelvelp.nl+is+geautoriseerd" in res_unauth_create.headers["location"]
+    # Bevestig dat er GEEN nieuwe lijst is aangemaakt
+    assert len(db.list_mailinglijsten()) == 1
+
+    # 4. Poging om lid toe te voegen als niet-admin wordt geweigerd
+    res_unauth_add = client_readonly.post(
+        f"/mailinglijsten/{ml.id}/leden/toevoegen",
+        data={"contact_ids": [c.id]},
+        follow_redirects=False
+    )
+    assert res_unauth_add.status_code == 303
+    assert "Alleen+alberdao@denheuvelvelp.nl+mag+leden+toevoegen" in res_unauth_add.headers["location"]
+
+    # 5. Poging om lid te verwijderen als niet-admin wordt geweigerd
+    res_unauth_rem = client_readonly.post(
+        f"/mailinglijsten/{ml.id}/leden/verwijderen",
+        data={"contact_id": c.id},
+        follow_redirects=False
+    )
+    assert res_unauth_rem.status_code == 303
+    assert "Alleen+alberdao@denheuvelvelp.nl+mag+leden+verwijderen" in res_unauth_rem.headers["location"]
+
+    # 6. Poging om te syncen naar Google als niet-admin wordt geweigerd
+    res_unauth_sync = client_readonly.post(
+        f"/mailinglijsten/{ml.id}/sync-google",
+        follow_redirects=False
+    )
+    assert res_unauth_sync.status_code == 303
+    assert "Alleen+alberdao@denheuvelvelp.nl+mag+synchroniseren" in res_unauth_sync.headers["location"]
+
+    # 7. Poging om lijst te verwijderen als niet-admin wordt geweigerd
+    res_unauth_del = client_readonly.post(
+        f"/mailinglijsten/{ml.id}/verwijderen",
+        follow_redirects=False
+    )
+    assert res_unauth_del.status_code == 303
+    assert "Alleen+alberdao@denheuvelvelp.nl+kan+lijsten+verwijderen" in res_unauth_del.headers["location"]
+    assert len(db.list_mailinglijsten()) == 1

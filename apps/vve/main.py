@@ -307,15 +307,29 @@ def download_sample_vve_csv():
 
 
 # --- VvE Mailinglijsten Beheer (Handmatig & Google Workspace) ---
+ADMIN_MAILINGLIST_EMAIL = "alberdao@denheuvelvelp.nl"
+
+
+def is_mailinglist_admin(user: Optional[dict]) -> bool:
+    """Controleert of de ingelogde gebruiker de exclusieve beheerder is (alberdao@denheuvelvelp.nl)."""
+    if not user:
+        return False
+    return user.get("email", "").strip().lower() == ADMIN_MAILINGLIST_EMAIL.lower()
+
+
 @app.get("/mailinglijsten", response_class=HTMLResponse)
 def page_vve_mailinglijsten(request: Request, msg: Optional[str] = None, error: Optional[str] = None):
     db = get_vve_db()
     lijsten = db.list_mailinglijsten()
+    user = auth.get_current_user(request)
+    can_manage = is_mailinglist_admin(user)
     return templates.TemplateResponse(
         request=request,
         name="mailinglijsten.html",
         context={
-            "user": auth.get_current_user(request),
+            "user": user,
+            "can_manage": can_manage,
+            "admin_email": ADMIN_MAILINGLIST_EMAIL,
             "mailinglijsten": lijsten,
             "msg": msg,
             "error": error
@@ -325,10 +339,18 @@ def page_vve_mailinglijsten(request: Request, msg: Optional[str] = None, error: 
 
 @app.post("/mailinglijsten/nieuw")
 def action_create_vve_mailinglijst(
+    request: Request,
     naam: str = Form(...),
     email_prefix: str = Form(...),
     omschrijving: Optional[str] = Form(default="")
 ):
+    user = auth.get_current_user(request)
+    if not is_mailinglist_admin(user):
+        return RedirectResponse(
+            url="/mailinglijsten?error=Alleen+alberdao@denheuvelvelp.nl+is+geautoriseerd+om+nieuwe+mededelingenlijsten+aan+te+maken.",
+            status_code=303
+        )
+
     clean_prefix = email_prefix.strip().lower().replace("@denheuvelvelp.nl", "")
     full_email = f"{clean_prefix}@denheuvelvelp.nl"
     db = get_vve_db()
@@ -355,6 +377,9 @@ def page_vve_mailinglijst_leden(
     if not ml:
         raise HTTPException(status_code=404, detail="Mailinglijst niet gevonden")
 
+    user = auth.get_current_user(request)
+    can_manage = is_mailinglist_admin(user)
+
     alle_contacten = db.list_all()
     leden_set = set(ml.leden)
     huidige_leden = [c for c in alle_contacten if c.id in leden_set]
@@ -363,7 +388,9 @@ def page_vve_mailinglijst_leden(
         request=request,
         name="mailinglijst_leden.html",
         context={
-            "user": auth.get_current_user(request),
+            "user": user,
+            "can_manage": can_manage,
+            "admin_email": ADMIN_MAILINGLIST_EMAIL,
             "mailinglijst": ml,
             "huidige_leden": huidige_leden,
             "alle_contacten": alle_contacten,
@@ -375,9 +402,17 @@ def page_vve_mailinglijst_leden(
 
 @app.post("/mailinglijsten/{ml_id}/leden/toevoegen")
 def action_add_members_to_vve_mailinglijst(
+    request: Request,
     ml_id: str,
     contact_ids: List[str] = Form(default=[])
 ):
+    user = auth.get_current_user(request)
+    if not is_mailinglist_admin(user):
+        return RedirectResponse(
+            url=f"/mailinglijsten/{ml_id}/leden?error=Alleen+alberdao@denheuvelvelp.nl+mag+leden+toevoegen.",
+            status_code=303
+        )
+
     db = get_vve_db()
     ml = db.get_mailinglijst(ml_id)
     if not ml:
@@ -398,9 +433,17 @@ def action_add_members_to_vve_mailinglijst(
 
 @app.post("/mailinglijsten/{ml_id}/leden/verwijderen")
 def action_remove_member_from_vve_mailinglijst(
+    request: Request,
     ml_id: str,
     contact_id: str = Form(...)
 ):
+    user = auth.get_current_user(request)
+    if not is_mailinglist_admin(user):
+        return RedirectResponse(
+            url=f"/mailinglijsten/{ml_id}/leden?error=Alleen+alberdao@denheuvelvelp.nl+mag+leden+verwijderen.",
+            status_code=303
+        )
+
     db = get_vve_db()
     ml = db.get_mailinglijst(ml_id)
     if not ml:
@@ -414,7 +457,14 @@ def action_remove_member_from_vve_mailinglijst(
 
 
 @app.post("/mailinglijsten/{ml_id}/sync-google")
-def action_sync_vve_mailinglijst_to_google(ml_id: str):
+def action_sync_vve_mailinglijst_to_google(request: Request, ml_id: str):
+    user = auth.get_current_user(request)
+    if not is_mailinglist_admin(user):
+        return RedirectResponse(
+            url=f"/mailinglijsten/{ml_id}/leden?error=Alleen+alberdao@denheuvelvelp.nl+mag+synchroniseren+naar+Google+Workspace.",
+            status_code=303
+        )
+
     db = get_vve_db()
     ml = db.get_mailinglijst(ml_id)
     if not ml:
@@ -452,7 +502,13 @@ def action_sync_vve_mailinglijst_to_google(ml_id: str):
 
 
 @app.post("/mailinglijsten/{ml_id}/verwijderen")
-def action_delete_vve_mailinglijst(ml_id: str):
+def action_delete_vve_mailinglijst(request: Request, ml_id: str):
+    user = auth.get_current_user(request)
+    if not is_mailinglist_admin(user):
+        return RedirectResponse(
+            url="/mailinglijsten?error=Alleen+alberdao@denheuvelvelp.nl+kan+lijsten+verwijderen.",
+            status_code=303
+        )
     db = get_vve_db()
     db.delete_mailinglijst(ml_id)
     return RedirectResponse(
